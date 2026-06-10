@@ -1,0 +1,15 @@
+CONFIG_IDF_TARGET="esp32s3"
+
+# Flash
+CONFIG_ESPTOOLPY_FLASHSIZE_4MB=y
+
+# PSRAM (optional but recommended for LVGL double buffers)
+CONFIG_SPIRAM=y
+CONFIG_SPIRAM_MODE_OCT=y
+CONFIG_SPIRAM_SPEED_80M=y
+
+# Main task stack for LVGL init
+CONFIG_ESP_MAIN_TASK_STACK_SIZE=8192
+
+# LVGL fonts used by the demo UI
+CONFIG_LV_FONT_MONTSERRAT_20=y
