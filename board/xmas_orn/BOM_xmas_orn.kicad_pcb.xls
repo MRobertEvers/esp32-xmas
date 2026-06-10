@@ -1,0 +1,14 @@
+﻿Designator,Quantity,Value,Footprint,Package,MPN,DNP,Mount_Type,Description,KiLib_Generator,Sim.Pins
+"C1, C2",2,10uF,C_0805_2012Metric,,CL21A106KOQNNNE,,smt,Unpolarized capacitor,SMD_2terminal_chip_molded,
+C3,1,1uF,C_0603_1608Metric,,CL10A105KA8NNNC,,smt,Unpolarized capacitor,SMD_2terminal_chip_molded,
+"D1, D2",2,LED,LED_0603_1608Metric,,19-217/R6C-AL1M2VY/6T,,smt,Light emitting diode,SMD_2terminal_chip_molded,1=K 2=A
+J1,1,Conn_01x07_Socket,PinSocket_1x07_P2.54mm_Vertical,,HX PM2.54-1x7P ZC-Y,,tht,"Generic connector, single row, 01x07, script generated",connector/pin_header_socket,
+J3,1,USB_C_Receptacle_USB2.0_16P,USB_C_Receptacle_HRO_TYPE-C-31-M-12,,TYPE-C-31-M-12,,smt,USB 2.0-only 16P Type-C Receptacle connector,,
+"R1, R2",2,5.1k,R_0603_1608Metric,,RC0603FR-075K1L,,smt,Resistor,SMD_2terminal_chip_molded,
+"R3, R4",2,10k,R_0603_1608Metric,,AC0603JR-0710KL,,smt,Resistor,SMD_2terminal_chip_molded,
+R5,1,2k,R_0603_1608Metric,,RC0603JR-072KL,,smt,Resistor,SMD_2terminal_chip_molded,
+R6,1,470,R_0603_1608Metric,,RC0603FR-07470RL,,smt,Resistor,SMD_2terminal_chip_molded,
+SW1,1,RST,SW_SPST_B3U-1000P,,B3U-1000P,,smt,"Push button switch, generic, two pins",,
+SW2,1,BOOT,SW_SPST_B3U-1000P,,B3U-1000P,,smt,"Push button switch, generic, two pins",,
+U1,1,ESP32-S3-MINI-1,ESP32-S2-MINI-1,,ESP32-S3-MINI-1-N8,,smt,"RF Module, ESP32-S3 SoC, Wi-Fi 802.11b/g/n, Bluetooth, BLE, 32-bit, 3.3V, SMD, onboard antenna",,
+U2,1,TLV75733PDBV,SOT-23-5,,TLV75733PDBVR-MS,,smt,"1A Low IQ Small Size Low Dropout Voltage Regulator, Fixed Output 3.3V, SOT-23-5",package/gullwing,
