@@ -1,6 +1,13 @@
 # ESP-IDF build output
 build/
 
+# Host extract_model tool build
+tools/extract_model/build/
+tools/extract_model/build
+tools/gen_hsl16_table/build/
+tools/gen_hsl16_table/build
+components/toridraw/data/hsl16_rgb_table.bin
+
 # Generated Kconfig (keep sdkconfig.defaults)
 sdkconfig
 sdkconfig.old

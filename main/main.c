@@ -1,27 +1,31 @@
 /*
- * ESP32-S3 + ST7789 240x240 SPI LCD with LVGL demo
+ * ESP32-S3 + ST7789 240x240: decode a flashed OSRS model and render with toridraw.
  */
 
+#include <stdint.h>
 #include <stdio.h>
+#include <string.h>
+
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_err.h"
+#include "esp_heap_caps.h"
 #include "esp_log.h"
+#include "esp_partition.h"
 #include "driver/gpio.h"
 #include "driver/spi_master.h"
 #include "esp_lcd_panel_io.h"
 #include "esp_lcd_panel_ops.h"
 #include "esp_lcd_panel_st7789.h"
-#include "esp_lvgl_port.h"
-#include "lvgl.h"
 
-static const char *TAG = "st7789_lvgl";
+#include "osrs/rscache/tables/model.h"
+#include "gamecache/toridraw_cachemodel.h"
+#include "toridraw/toridraw.h"
+#include "toridraw/toridraw_light_model.h"
 
-/* -------------------------------------------------------------------------- */
-/* Pin configuration — edit these to match your wiring                      */
-/* -------------------------------------------------------------------------- */
+static const char *TAG = "xmas_model";
+
 #define LCD_HOST                SPI2_HOST
-
 #define PIN_LCD_SCLK            12
 #define PIN_LCD_MOSI            11
 #define PIN_LCD_CS              10
@@ -31,16 +35,18 @@ static const char *TAG = "st7789_lvgl";
 
 #define LCD_H_RES               240
 #define LCD_V_RES               240
-
 #define LCD_PIXEL_CLOCK_HZ      (40 * 1000 * 1000)
-#define LCD_CMD_BITS            8
-#define LCD_PARAM_BITS          8
-
 #define LCD_BLK_ON_LEVEL        1
-#define LCD_DRAW_BUF_LINES      20
+
+#define MODEL_PART_NAME         "model"
+#define FRAME_BG_RGB            0x0B1D3A
 
 static esp_lcd_panel_io_handle_t s_lcd_io = NULL;
 static esp_lcd_panel_handle_t s_lcd_panel = NULL;
+
+static const esp_partition_t *s_model_part = NULL;
+static const void *s_model_map = NULL;
+static esp_partition_mmap_handle_t s_model_map_handle = 0;
 
 static void backlight_init(void)
 {
@@ -59,7 +65,6 @@ static void backlight_on(void)
 
 static void lcd_init(void)
 {
-    ESP_LOGI(TAG, "Initialize SPI bus");
     spi_bus_config_t bus_cfg = {
         .sclk_io_num = PIN_LCD_SCLK,
         .mosi_io_num = PIN_LCD_MOSI,
@@ -70,19 +75,17 @@ static void lcd_init(void)
     };
     ESP_ERROR_CHECK(spi_bus_initialize(LCD_HOST, &bus_cfg, SPI_DMA_CH_AUTO));
 
-    ESP_LOGI(TAG, "Install panel IO");
     esp_lcd_panel_io_spi_config_t io_cfg = {
         .dc_gpio_num = PIN_LCD_DC,
         .cs_gpio_num = PIN_LCD_CS,
         .pclk_hz = LCD_PIXEL_CLOCK_HZ,
-        .lcd_cmd_bits = LCD_CMD_BITS,
-        .lcd_param_bits = LCD_PARAM_BITS,
+        .lcd_cmd_bits = 8,
+        .lcd_param_bits = 8,
         .spi_mode = 0,
         .trans_queue_depth = 10,
     };
     ESP_ERROR_CHECK(esp_lcd_new_panel_io_spi(LCD_HOST, &io_cfg, &s_lcd_io));
 
-    ESP_LOGI(TAG, "Install ST7789 panel driver");
     esp_lcd_panel_dev_config_t panel_cfg = {
         .reset_gpio_num = PIN_LCD_RST,
         .rgb_ele_order = LCD_RGB_ELEMENT_ORDER_BGR,
@@ -92,115 +95,182 @@ static void lcd_init(void)
 
     ESP_ERROR_CHECK(esp_lcd_panel_reset(s_lcd_panel));
     ESP_ERROR_CHECK(esp_lcd_panel_init(s_lcd_panel));
-
-    /* Uncomment if the image is shifted (common on some 240x240 modules):
-     * ESP_ERROR_CHECK(esp_lcd_panel_set_gap(s_lcd_panel, 0, 80));
-     */
-
     ESP_ERROR_CHECK(esp_lcd_panel_invert_color(s_lcd_panel, true));
-
-    /* Uncomment if the image is mirrored or upside-down:
-     * ESP_ERROR_CHECK(esp_lcd_panel_mirror(s_lcd_panel, true, false));
-     */
-
     ESP_ERROR_CHECK(esp_lcd_panel_disp_on_off(s_lcd_panel, true));
 }
 
-static lv_display_t *lvgl_init_display(void)
+static bool model_partition_map(void)
 {
-    const lvgl_port_cfg_t lvgl_cfg = ESP_LVGL_PORT_INIT_CONFIG();
-    ESP_ERROR_CHECK(lvgl_port_init(&lvgl_cfg));
+    s_model_part = esp_partition_find_first(
+        ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_ANY, MODEL_PART_NAME);
+    if( !s_model_part )
+    {
+        ESP_LOGE(TAG, "partition '%s' not found", MODEL_PART_NAME);
+        return false;
+    }
 
-    const lvgl_port_display_cfg_t disp_cfg = {
-        .io_handle = s_lcd_io,
-        .panel_handle = s_lcd_panel,
-        .buffer_size = LCD_H_RES * LCD_DRAW_BUF_LINES,
-        .double_buffer = true,
-        .hres = LCD_H_RES,
-        .vres = LCD_V_RES,
-        .monochrome = false,
-        .color_format = LV_COLOR_FORMAT_RGB565,
-        .rotation = {
-            .swap_xy = false,
-            .mirror_x = false,
-            .mirror_y = false,
-        },
-        .flags = {
-            .buff_dma = true,
-            .swap_bytes = true,
-        },
-    };
+    esp_err_t err = esp_partition_mmap(
+        s_model_part,
+        0,
+        s_model_part->size,
+        ESP_PARTITION_MMAP_DATA,
+        &s_model_map,
+        &s_model_map_handle);
+    if( err != ESP_OK )
+    {
+        ESP_LOGE(TAG, "esp_partition_mmap failed: %s", esp_err_to_name(err));
+        return false;
+    }
 
-    return lvgl_port_add_disp(&disp_cfg);
+    return true;
 }
 
-static void arc_anim_cb(void *var, int32_t value)
+static uint16_t rgb888_to_rgb565_swapped(int rgb)
 {
-    lv_arc_set_value((lv_obj_t *)var, value);
+    uint16_t r = (uint16_t)((rgb >> 16) & 0xFF);
+    uint16_t g = (uint16_t)((rgb >> 8) & 0xFF);
+    uint16_t b = (uint16_t)(rgb & 0xFF);
+    uint16_t c = (uint16_t)(((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3));
+    return (uint16_t)((c >> 8) | (c << 8));
 }
 
-static void create_demo_ui(void)
+static void blit_framebuffer_to_lcd(const int *pixel_buffer)
 {
-    lv_obj_t *scr = lv_screen_active();
-    lv_obj_set_style_bg_color(scr, lv_color_hex(0x0B1D3A), LV_PART_MAIN);
+    static uint16_t line_buf[LCD_H_RES];
 
-    lv_obj_t *title = lv_label_create(scr);
-    lv_label_set_text(title, "ESP32-S3");
-    lv_obj_set_style_text_color(title, lv_color_hex(0xFFFFFF), LV_PART_MAIN);
-    lv_obj_set_style_text_font(title, &lv_font_montserrat_20, LV_PART_MAIN);
-    lv_obj_align(title, LV_ALIGN_TOP_MID, 0, 24);
+    for( int y = 0; y < LCD_V_RES; y++ )
+    {
+        const int *row = pixel_buffer + y * LCD_H_RES;
+        for( int x = 0; x < LCD_H_RES; x++ )
+            line_buf[x] = rgb888_to_rgb565_swapped(row[x]);
 
-    lv_obj_t *subtitle = lv_label_create(scr);
-    lv_label_set_text(subtitle, "ST7789 240x240");
-    lv_obj_set_style_text_color(subtitle, lv_color_hex(0xA8C7FA), LV_PART_MAIN);
-    lv_obj_align(subtitle, LV_ALIGN_TOP_MID, 0, 52);
-
-    lv_obj_t *arc = lv_arc_create(scr);
-    lv_obj_set_size(arc, 120, 120);
-    lv_arc_set_range(arc, 0, 100);
-    lv_arc_set_value(arc, 35);
-    lv_arc_set_bg_angles(arc, 0, 360);
-    lv_obj_remove_style(arc, NULL, LV_PART_KNOB);
-    lv_obj_clear_flag(arc, LV_OBJ_FLAG_CLICKABLE);
-    lv_obj_set_style_arc_color(arc, lv_color_hex(0x34D399), LV_PART_INDICATOR);
-    lv_obj_set_style_arc_color(arc, lv_color_hex(0x1F3A5F), LV_PART_MAIN);
-    lv_obj_set_style_arc_width(arc, 10, LV_PART_INDICATOR);
-    lv_obj_set_style_arc_width(arc, 10, LV_PART_MAIN);
-    lv_obj_align(arc, LV_ALIGN_CENTER, 0, 20);
-
-    lv_anim_t anim;
-    lv_anim_init(&anim);
-    lv_anim_set_var(&anim, arc);
-    lv_anim_set_exec_cb(&anim, arc_anim_cb);
-    lv_anim_set_values(&anim, 0, 100);
-    lv_anim_set_duration(&anim, 2000);
-    lv_anim_set_playback_duration(&anim, 2000);
-    lv_anim_set_repeat_count(&anim, LV_ANIM_REPEAT_INFINITE);
-    lv_anim_start(&anim);
-
-    lv_obj_t *status = lv_label_create(scr);
-    lv_label_set_text(status, "LVGL ready");
-    lv_obj_set_style_text_color(status, lv_color_hex(0xFDE68A), LV_PART_MAIN);
-    lv_obj_align(status, LV_ALIGN_BOTTOM_MID, 0, -24);
+        ESP_ERROR_CHECK(esp_lcd_panel_draw_bitmap(
+            s_lcd_panel, 0, y, LCD_H_RES, y + 1, line_buf));
+    }
 }
 
 void app_main(void)
 {
-    ESP_LOGI(TAG, "ST7789 LVGL demo starting");
+    ESP_LOGI(TAG, "OSRS model renderer starting");
 
     backlight_init();
     lcd_init();
     backlight_on();
 
-    lv_display_t *display = lvgl_init_display();
-    if (display == NULL) {
-        ESP_LOGE(TAG, "Failed to add LVGL display");
+    if( !model_partition_map() )
+        return;
+
+    const uint8_t *mapped = (const uint8_t *)s_model_map;
+    uint32_t payload_size =
+        (uint32_t)mapped[0]
+        | ((uint32_t)mapped[1] << 8)
+        | ((uint32_t)mapped[2] << 16)
+        | ((uint32_t)mapped[3] << 24);
+    const unsigned char *model_bytes = mapped + 4;
+
+    if( payload_size == 0 || payload_size + 4 > s_model_part->size )
+    {
+        ESP_LOGE(TAG, "invalid model payload size %lu", (unsigned long)payload_size);
         return;
     }
 
-    lvgl_port_lock(0);
-    create_demo_ui();
-    lvgl_port_unlock();
+    ESP_LOGI(TAG, "decoding %lu byte model from flash", (unsigned long)payload_size);
+    struct CacheModel *cache_model = model_new_decode(model_bytes, (int)payload_size);
+    if( !cache_model )
+    {
+        ESP_LOGE(TAG, "model_new_decode failed");
+        return;
+    }
 
-    ESP_LOGI(TAG, "Demo UI running on %dx%d display", LCD_H_RES, LCD_V_RES);
+    ESP_LOGI(
+        TAG,
+        "decoded model: %d vertices, %d faces",
+        cache_model->vertex_count,
+        cache_model->face_count);
+
+    struct ToriDraw_Model *td_model = toridraw_model_new_from_cache_model(cache_model);
+    model_free(cache_model);
+    if( !td_model )
+    {
+        ESP_LOGE(TAG, "toridraw_model_new_from_cache_model failed");
+        return;
+    }
+
+    struct ToriDraw_ModelHandle model_hnd = {
+        .kind = TORIDRAWMK_MODEL,
+        .u.model.model = td_model,
+    };
+
+    toridraw_init();
+    struct ToriDraw_Context *ctx = toridraw_context_new();
+    if( !ctx )
+    {
+        ESP_LOGE(TAG, "toridraw_context_new failed");
+        return;
+    }
+
+    toridraw_light_model_default(model_hnd, 0, 0);
+
+    int pixel_count = LCD_H_RES * LCD_V_RES;
+    int *pixel_buffer = heap_caps_malloc(
+        (size_t)pixel_count * sizeof(int), MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+    if( !pixel_buffer )
+    {
+        ESP_LOGE(TAG, "failed to allocate framebuffer in PSRAM");
+        return;
+    }
+
+    struct ToriDraw_ViewPort view_port = {
+        .width = LCD_H_RES,
+        .height = LCD_V_RES,
+        .stride = LCD_H_RES,
+        .x_center = LCD_H_RES / 2,
+        .y_center = LCD_V_RES / 2,
+        .clip_left = 0,
+        .clip_top = 0,
+        .clip_right = LCD_H_RES,
+        .clip_bottom = LCD_V_RES,
+    };
+
+    struct ToriDraw_Camera camera = {
+        .fov_rpi2048 = 512,
+        .near_plane_z = 50,
+        .pitch = 0,
+        .yaw = 0,
+        .roll = 0,
+    };
+
+    struct ToriDraw_Position position = {
+        .x = 0,
+        .y = 0,
+        .z = 300,
+        .pitch = 0,
+        .yaw = 0,
+        .roll = 0,
+    };
+
+    ESP_LOGI(TAG, "render loop running");
+
+    int yaw = 0;
+    while( true )
+    {
+        for( int i = 0; i < pixel_count; i++ )
+            pixel_buffer[i] = FRAME_BG_RGB;
+
+        // camera.yaw = yaw;
+        position.yaw = yaw;
+
+        int cull = toridraw_render_model1_project(
+            model_hnd, ctx, &position, &view_port, &camera);
+        if( cull == TORIDRAW_CULL_VISIBLE )
+        {
+            toridraw_render_model2_sort_faces(model_hnd, ctx);
+            toridraw_render_model3_raster(ctx, &view_port, &camera, pixel_buffer, false);
+        }
+
+        blit_framebuffer_to_lcd(pixel_buffer);
+
+        yaw = (yaw + 8) & 2047;
+        vTaskDelay(pdMS_TO_TICKS(50));
+    }
 }

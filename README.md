@@ -1,6 +1,6 @@
-# ESP32-S3 ST7789 LVGL Display
+# ESP32-S3 OSRS Model Renderer
 
-ESP-IDF firmware for an **ESP32-S3 dev module** driving a **240x240 ST7789** SPI LCD with an **LVGL** demo UI.
+ESP-IDF firmware for an **ESP32-S3** driving a **240x240 ST7789** SPI LCD. At build time a model is extracted from the dat1 OSRS cache (`3d-raster/cache`), flashed to a dedicated partition, then decoded and rendered on-device with **rscache** + **toridraw**.
 
 ## Hardware
 
@@ -15,74 +15,73 @@ ESP-IDF firmware for an **ESP32-S3 dev module** driving a **240x240 ST7789** SPI
 | VCC     | 3.3 V         | Use 3.3 V only |
 | GND     | GND           | Common ground |
 
-Default pins are defined at the top of [`main/main.c`](main/main.c).
+Default pins are defined in [`main/main.c`](main/main.c).
 
 ## Prerequisites
 
-- [ESP-IDF v5.1+](https://docs.espressif.com/projects/esp-idf/en/latest/esp32s3/get-started/index.html) installed and exported in your shell
-- USB cable connected to the ESP32-S3 dev module
+- [ESP-IDF v5.1+](https://docs.espressif.com/projects/esp-idf/en/latest/esp32s3/get-started/index.html)
+- Sibling checkout of [`3d-raster`](../3d-raster) with a dat1 cache at `3d-raster/cache`
+- ESP32-S3 module with **octal PSRAM** (required for toridraw lookup tables)
 
 ## Build and flash
 
 From the project root:
 
-```sh
+```powershell
+. .\scripts\export-idf.ps1
 idf.py set-target esp32s3
 idf.py build
 idf.py -p COMx flash monitor
 ```
 
-Replace `COMx` with your serial port (for example `COM3` on Windows or `/dev/ttyUSB0` on Linux).
+`idf.py build` automatically:
 
-On first build, the Component Manager downloads `esp_lvgl_port` and LVGL automatically.
+1. Builds the host `extract_model` tool (first time only)
+2. Extracts model archive **7** from `../3d-raster/cache` into `build/model.bin`
+3. Links toridraw/rsmodel from `../3d-raster` sources
+
+`idf.py flash` writes both the firmware and `model.bin` to the `model` flash partition.
+
+### Choose a different model
+
+Pass a CMake cache variable when configuring/building:
+
+```powershell
+idf.py -DMODEL_ID=42 build
+```
+
+Or extract manually:
+
+```powershell
+.\scripts\extract-model.ps1 -ModelId 42 -CacheDir C:\path\to\cache
+```
 
 ## What you should see
 
-After flashing, the display shows:
-
-- Dark blue background
-- **ESP32-S3** title and **ST7789 240x240** subtitle
-- Animated arc indicator (oscillates 0–100%)
-- **LVGL ready** status text
-
-## Customization
-
-### Change GPIO pins
-
-Edit the `#define PIN_LCD_*` block near the top of [`main/main.c`](main/main.c).
-
-### Display looks wrong
-
-Try these tweaks in [`main/main.c`](main/main.c) inside `lcd_init()`:
-
-| Symptom | Fix |
-|---------|-----|
-| Image shifted | Uncomment `esp_lcd_panel_set_gap()` |
-| Wrong colors | Toggle `esp_lcd_panel_invert_color()` |
-| Mirrored / upside down | Adjust `esp_lcd_panel_mirror()` or the `rotation` fields in `disp_cfg` |
-| Garbled pixels | Lower `LCD_PIXEL_CLOCK_HZ` (for example 20 MHz) |
-
-### Backlight polarity
-
-If the backlight stays off, change `LCD_BLK_ON_LEVEL` to `0` in [`main/main.c`](main/main.c).
-
-### Memory / performance
-
-- `LCD_DRAW_BUF_LINES` controls LVGL draw buffer height (default: 20 lines).
-- `sdkconfig.defaults` enables octal PSRAM for larger buffers; disable if your module has no PSRAM.
+A rotating 3D OSRS model on a dark blue background.
 
 ## Project layout
 
 ```
 .
-├── CMakeLists.txt
-├── sdkconfig.defaults
-├── main/
-│   ├── CMakeLists.txt
-│   ├── idf_component.yml
-│   └── main.c
-└── README.md
+├── CMakeLists.txt          # MODEL_ID, cache path, model.bin flash hook
+├── partitions.csv          # factory app + model data partition
+├── components/
+│   ├── rsmodel/            # model_new_decode from 3d-raster rscache
+│   └── toridraw/           # software renderer from 3d-raster
+├── tools/extract_model/    # host cache extractor
+├── scripts/
+│   ├── extract-model.ps1
+│   └── export-idf.ps1
+└── main/main.c
 ```
+
+## Customization
+
+- **GPIO pins:** edit `PIN_LCD_*` in [`main/main.c`](main/main.c)
+- **Cache location:** `idf.py -DCACHE_DIR=C:\path\to\cache build`
+- **3d-raster location:** `idf.py -DRASTER_DIR=C:\path\to\3d-raster build`
+- **Display tuning:** see `lcd_init()` in [`main/main.c`](main/main.c)
 
 ## License
 
