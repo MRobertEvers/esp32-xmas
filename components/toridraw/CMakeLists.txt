@@ -5,10 +5,11 @@ file(TO_CMAKE_PATH "${RASTER_DIR}" RASTER_DIR)
 
 set(TORIDRAW_DIR "${RASTER_DIR}/src2/toridraw")
 set(GAMECACHE_DIR "${RASTER_DIR}/src2/gamecache")
+set(TORIDRAW_TABLES_C "${CMAKE_BINARY_DIR}/gen/toridraw_tables_data.c")
 
 idf_component_register(
     SRCS
-        "esp_hsl16_load.c"
+        "${TORIDRAW_TABLES_C}"
         "${TORIDRAW_DIR}/toridraw.c"
         "${TORIDRAW_DIR}/toridraw_model.c"
         "${TORIDRAW_DIR}/toridraw_math.c"
@@ -24,10 +25,15 @@ idf_component_register(
         "${GAMECACHE_DIR}"
     REQUIRES
         rsmodel
-    LDFRAGMENTS
-        linker.lf
-    EMBED_FILES
-        "data/hsl16_rgb_table.bin"
+)
+
+target_compile_definitions(${COMPONENT_LIB} PUBLIC
+    TORIDRAW_PIXEL16
+)
+
+target_compile_definitions(${COMPONENT_LIB} PRIVATE
+    TORIDRAW_TABLES_PRECOMPUTED
+    TORIDRAW_DISABLE_SIMD_TABLES
 )
 
 target_compile_options(${COMPONENT_LIB} PRIVATE
@@ -38,4 +44,3 @@ target_compile_options(${COMPONENT_LIB} PRIVATE
 )
 
 target_link_libraries(${COMPONENT_LIB} PRIVATE m)
-target_link_libraries(${COMPONENT_LIB} INTERFACE "-Wl,--wrap=init_hsl16_to_rgb_table")

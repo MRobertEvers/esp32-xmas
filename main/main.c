@@ -32,6 +32,7 @@ static const char *TAG = "xmas_model";
 #define PIN_LCD_DC              9
 #define PIN_LCD_RST             8
 #define PIN_LCD_BLK             7
+#define PIN_PULSE               4
 
 #define LCD_H_RES               240
 #define LCD_V_RES               240
@@ -56,6 +57,16 @@ static void backlight_init(void)
     };
     ESP_ERROR_CHECK(gpio_config(&cfg));
     gpio_set_level(PIN_LCD_BLK, !LCD_BLK_ON_LEVEL);
+}
+
+static void pulse_gpio_init(void)
+{
+    gpio_config_t cfg = {
+        .pin_bit_mask = 1ULL << PIN_PULSE,
+        .mode = GPIO_MODE_OUTPUT,
+    };
+    ESP_ERROR_CHECK(gpio_config(&cfg));
+    gpio_set_level(PIN_PULSE, 0);
 }
 
 static void backlight_on(void)
@@ -134,19 +145,10 @@ static uint16_t rgb888_to_rgb565_swapped(int rgb)
     return (uint16_t)((c >> 8) | (c << 8));
 }
 
-static void blit_framebuffer_to_lcd(const int *pixel_buffer)
+static void blit_framebuffer_to_lcd(const uint16_t *pixel_buffer)
 {
-    static uint16_t line_buf[LCD_H_RES];
-
-    for( int y = 0; y < LCD_V_RES; y++ )
-    {
-        const int *row = pixel_buffer + y * LCD_H_RES;
-        for( int x = 0; x < LCD_H_RES; x++ )
-            line_buf[x] = rgb888_to_rgb565_swapped(row[x]);
-
-        ESP_ERROR_CHECK(esp_lcd_panel_draw_bitmap(
-            s_lcd_panel, 0, y, LCD_H_RES, y + 1, line_buf));
-    }
+    ESP_ERROR_CHECK(esp_lcd_panel_draw_bitmap(
+        s_lcd_panel, 0, 0, LCD_H_RES, LCD_V_RES, pixel_buffer));
 }
 
 void app_main(void)
@@ -154,11 +156,14 @@ void app_main(void)
     ESP_LOGI(TAG, "OSRS model renderer starting");
 
     backlight_init();
+    pulse_gpio_init();
     lcd_init();
     backlight_on();
 
     if( !model_partition_map() )
         return;
+
+
 
     const uint8_t *mapped = (const uint8_t *)s_model_map;
     uint32_t payload_size =
@@ -168,6 +173,8 @@ void app_main(void)
         | ((uint32_t)mapped[3] << 24);
     const unsigned char *model_bytes = mapped + 4;
 
+
+    printf("Remaining heap: %lu\n", (unsigned long)esp_get_free_heap_size());
     if( payload_size == 0 || payload_size + 4 > s_model_part->size )
     {
         ESP_LOGE(TAG, "invalid model payload size %lu", (unsigned long)payload_size);
@@ -202,7 +209,8 @@ void app_main(void)
     };
 
     toridraw_init();
-    struct ToriDraw_Context *ctx = toridraw_context_new();
+    toridraw_context_print_size(TORIDRAW_CTX_SMALL);
+    struct ToriDraw_Context *ctx = toridraw_context_new(TORIDRAW_CTX_SMALL);
     if( !ctx )
     {
         ESP_LOGE(TAG, "toridraw_context_new failed");
@@ -212,11 +220,11 @@ void app_main(void)
     toridraw_light_model_default(model_hnd, 0, 0);
 
     int pixel_count = LCD_H_RES * LCD_V_RES;
-    int *pixel_buffer = heap_caps_malloc(
-        (size_t)pixel_count * sizeof(int), MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+    uint16_t *pixel_buffer = heap_caps_malloc(
+        (size_t)pixel_count * sizeof(uint16_t), MALLOC_CAP_DMA | MALLOC_CAP_8BIT);
     if( !pixel_buffer )
     {
-        ESP_LOGE(TAG, "failed to allocate framebuffer in PSRAM");
+        ESP_LOGE(TAG, "failed to allocate framebuffer in internal DRAM");
         return;
     }
 
@@ -252,10 +260,17 @@ void app_main(void)
     ESP_LOGI(TAG, "render loop running");
 
     int yaw = 0;
+    int pulse_tick = 0;
+    int pulse_level = 0;
+    /* Loop period is 50 ms; toggle every 40 ticks = 2 s */
+    const int pulse_period_ticks = 2000 / 50;
+
+    printf("Remaining heap before loop: %lu\n", (unsigned long)esp_get_free_heap_size());
+    const uint16_t bg565 = rgb888_to_rgb565_swapped(FRAME_BG_RGB);
     while( true )
     {
         for( int i = 0; i < pixel_count; i++ )
-            pixel_buffer[i] = FRAME_BG_RGB;
+            pixel_buffer[i] = bg565;
 
         // camera.yaw = yaw;
         position.yaw = yaw;
@@ -269,6 +284,13 @@ void app_main(void)
         }
 
         blit_framebuffer_to_lcd(pixel_buffer);
+
+        if( ++pulse_tick >= pulse_period_ticks )
+        {
+            pulse_tick = 0;
+            pulse_level ^= 1;
+            gpio_set_level(PIN_PULSE, pulse_level);
+        }
 
         yaw = (yaw + 8) & 2047;
         vTaskDelay(pdMS_TO_TICKS(50));

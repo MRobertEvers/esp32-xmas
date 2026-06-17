@@ -12,9 +12,9 @@ include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 project(st7789_lvgl)
 
 set(MODEL_BIN "${CMAKE_BINARY_DIR}/model.bin")
-set(HSL16_BIN "${CMAKE_SOURCE_DIR}/components/toridraw/data/hsl16_rgb_table.bin")
+set(TORIDRAW_TABLES_C "${CMAKE_BINARY_DIR}/gen/toridraw_tables_data.c")
 set(EXTRACT_SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/scripts/extract-model.ps1")
-set(GEN_HSL16_SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/scripts/gen-hsl16-table.ps1")
+set(GEN_CONST_TABLES_SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/scripts/gen-const-tables.ps1")
 
 add_custom_command(
     OUTPUT "${MODEL_BIN}"
@@ -30,17 +30,16 @@ add_custom_command(
 add_custom_target(model_bin ALL DEPENDS "${MODEL_BIN}")
 
 add_custom_command(
-    OUTPUT "${HSL16_BIN}"
-    COMMAND powershell -NoProfile -ExecutionPolicy Bypass -File "${GEN_HSL16_SCRIPT}"
-        -OutFile "${HSL16_BIN}"
+    OUTPUT "${TORIDRAW_TABLES_C}"
+    COMMAND powershell -NoProfile -ExecutionPolicy Bypass -File "${GEN_CONST_TABLES_SCRIPT}"
+        -OutFile "${TORIDRAW_TABLES_C}"
     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-    COMMENT "Generating precomputed HSL16 RGB lookup table"
+    COMMENT "Generating precomputed toridraw lookup tables (const flash arrays)"
     VERBATIM
 )
 
-add_custom_target(hsl16_table_bin ALL DEPENDS "${HSL16_BIN}")
-add_dependencies(flash hsl16_table_bin)
-add_dependencies(__idf_toridraw hsl16_table_bin)
+add_custom_target(toridraw_tables_gen ALL DEPENDS "${TORIDRAW_TABLES_C}")
+add_dependencies(__idf_toridraw toridraw_tables_gen)
 
 partition_table_get_partition_info(model_size "--partition-name model" "size")
 partition_table_get_partition_info(model_offset "--partition-name model" "offset")

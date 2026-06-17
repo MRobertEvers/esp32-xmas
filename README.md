@@ -21,7 +21,7 @@ Default pins are defined in [`main/main.c`](main/main.c).
 
 - [ESP-IDF v5.1+](https://docs.espressif.com/projects/esp-idf/en/latest/esp32s3/get-started/index.html)
 - Sibling checkout of [`3d-raster`](../3d-raster) with a dat1 cache at `3d-raster/cache`
-- ESP32-S3 module with **octal PSRAM** (required for toridraw lookup tables)
+- ESP32-S3 module with **octal PSRAM** (used for the 240x240 framebuffer)
 
 ## Build and flash
 
@@ -31,7 +31,7 @@ From the project root:
 . .\scripts\export-idf.ps1
 idf.py set-target esp32s3
 idf.py build
-idf.py -p COMx flash monitor
+idf.py -p COM5 flash monitor
 ```
 
 `idf.py build` automatically:
@@ -39,6 +39,7 @@ idf.py -p COMx flash monitor
 1. Builds the host `extract_model` tool (first time only)
 2. Extracts model archive **7** from `../3d-raster/cache` into `build/model.bin`
 3. Links toridraw/rsmodel from `../3d-raster` sources
+4. Precomputes toridraw math/HSL lookup tables into flash (`.rodata`) via `tools/gen_const_tables`
 
 `idf.py flash` writes both the firmware and `model.bin` to the `model` flash partition.
 
@@ -48,6 +49,7 @@ Pass a CMake cache variable when configuring/building:
 
 ```powershell
 idf.py -DMODEL_ID=42 build
+idf.py -DMODEL_ID=9424 build
 ```
 
 Or extract manually:
@@ -86,3 +88,4 @@ A rotating 3D OSRS model on a dark blue background.
 ## License
 
 Example code — use and modify freely for your projects.
+
