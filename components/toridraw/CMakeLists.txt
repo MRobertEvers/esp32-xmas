@@ -11,6 +11,10 @@ idf_component_register(
     SRCS
         "${TORIDRAW_TABLES_C}"
         "${TORIDRAW_DIR}/toridraw.c"
+        "${TORIDRAW_DIR}/toridraw_gccontext.c"
+        "${TORIDRAW_DIR}/toridraw_vec.c"
+        "${TORIDRAW_DIR}/toridraw_map.c"
+        "${TORIDRAW_DIR}/toridraw_animation.c"
         "${TORIDRAW_DIR}/toridraw_model.c"
         "${TORIDRAW_DIR}/toridraw_math.c"
         "${TORIDRAW_DIR}/toridraw_hsl16.c"

@@ -28,7 +28,7 @@ static const char *TAG = "xmas_model";
 #define LCD_HOST                SPI2_HOST
 #define PIN_LCD_SCLK            12
 #define PIN_LCD_MOSI            11
-#define PIN_LCD_CS              10
+#define PIN_LCD_CS              -1
 #define PIN_LCD_DC              9
 #define PIN_LCD_RST             8
 #define PIN_LCD_BLK             7
@@ -41,6 +41,53 @@ static const char *TAG = "xmas_model";
 
 #define MODEL_PART_NAME         "model"
 #define FRAME_BG_RGB            0x0B1D3A
+#define HEAD_SWING_DEG          30
+#define HEAD_YAW_UNITS_PER_REV  2048
+#define HEAD_YAW_POS_R2PI2048   ((HEAD_SWING_DEG * HEAD_YAW_UNITS_PER_REV) / 360)
+#define HEAD_YAW_NEG_R2PI2048   (((360 - HEAD_SWING_DEG) * HEAD_YAW_UNITS_PER_REV) / 360)
+#define HEAD_SWING_STEP         4
+
+typedef enum
+{
+    HEAD_YAW_TO_POS = 0,
+    HEAD_YAW_TO_NEG_WRAP,
+    HEAD_YAW_TO_CENTER,
+} HeadYawPhase;
+
+static int head_yaw_advance(int head_yaw, HeadYawPhase *phase)
+{
+    switch( *phase )
+    {
+    case HEAD_YAW_TO_POS:
+        head_yaw += HEAD_SWING_STEP;
+        if( head_yaw >= HEAD_YAW_POS_R2PI2048 )
+        {
+            head_yaw = HEAD_YAW_POS_R2PI2048;
+            *phase = HEAD_YAW_TO_NEG_WRAP;
+        }
+        break;
+
+    case HEAD_YAW_TO_NEG_WRAP:
+        head_yaw = toridraw_normalize_angle(head_yaw - HEAD_SWING_STEP);
+        if( head_yaw > HEAD_YAW_POS_R2PI2048 && head_yaw <= HEAD_YAW_NEG_R2PI2048 )
+        {
+            head_yaw = HEAD_YAW_NEG_R2PI2048;
+            *phase = HEAD_YAW_TO_CENTER;
+        }
+        break;
+
+    case HEAD_YAW_TO_CENTER:
+        head_yaw = toridraw_normalize_angle(head_yaw + HEAD_SWING_STEP);
+        if( head_yaw < HEAD_YAW_POS_R2PI2048 )
+        {
+            head_yaw = 0;
+            *phase = HEAD_YAW_TO_POS;
+        }
+        break;
+    }
+
+    return head_yaw;
+}
 
 static esp_lcd_panel_io_handle_t s_lcd_io = NULL;
 static esp_lcd_panel_handle_t s_lcd_panel = NULL;
@@ -92,7 +139,7 @@ static void lcd_init(void)
         .pclk_hz = LCD_PIXEL_CLOCK_HZ,
         .lcd_cmd_bits = 8,
         .lcd_param_bits = 8,
-        .spi_mode = 0,
+        .spi_mode = 3,
         .trans_queue_depth = 10,
     };
     ESP_ERROR_CHECK(esp_lcd_new_panel_io_spi(LCD_HOST, &io_cfg, &s_lcd_io));
@@ -107,7 +154,31 @@ static void lcd_init(void)
     ESP_ERROR_CHECK(esp_lcd_panel_reset(s_lcd_panel));
     ESP_ERROR_CHECK(esp_lcd_panel_init(s_lcd_panel));
     ESP_ERROR_CHECK(esp_lcd_panel_invert_color(s_lcd_panel, true));
+    ESP_ERROR_CHECK(esp_lcd_panel_mirror(s_lcd_panel, false, false));
+    ESP_ERROR_CHECK(esp_lcd_panel_swap_xy(s_lcd_panel, false));
+    ESP_ERROR_CHECK(esp_lcd_panel_set_gap(s_lcd_panel, 0, 0));
     ESP_ERROR_CHECK(esp_lcd_panel_disp_on_off(s_lcd_panel, true));
+
+    uint16_t *buf = heap_caps_malloc(
+        240 * 240 * 2,
+        MALLOC_CAP_DMA);
+
+    for (int i = 0; i < 240 * 240; i++)
+    {
+        buf[i] = 0xFFFF; // white
+    }
+
+    ESP_ERROR_CHECK(
+        esp_lcd_panel_draw_bitmap(
+            s_lcd_panel,
+            0,
+            0,
+            240,
+            240,
+            buf));
+
+    vTaskDelay(pdMS_TO_TICKS(100));
+    heap_caps_free(buf);
 }
 
 static bool model_partition_map(void)
@@ -259,7 +330,8 @@ void app_main(void)
 
     ESP_LOGI(TAG, "render loop running");
 
-    int yaw = 0;
+    int head_yaw = 0;
+    HeadYawPhase head_yaw_phase = HEAD_YAW_TO_POS;
     int pulse_tick = 0;
     int pulse_level = 0;
     /* Loop period is 50 ms; toggle every 40 ticks = 2 s */
@@ -272,8 +344,8 @@ void app_main(void)
         for( int i = 0; i < pixel_count; i++ )
             pixel_buffer[i] = bg565;
 
-        // camera.yaw = yaw;
-        position.yaw = yaw;
+        // camera.yaw = head_yaw;
+        position.yaw = head_yaw;
 
         int cull = toridraw_render_model1_project(
             model_hnd, ctx, &position, &view_port, &camera);
@@ -292,7 +364,8 @@ void app_main(void)
             gpio_set_level(PIN_PULSE, pulse_level);
         }
 
-        yaw = (yaw + 8) & 2047;
+        head_yaw = head_yaw_advance(head_yaw, &head_yaw_phase);
+
         vTaskDelay(pdMS_TO_TICKS(50));
     }
 }
