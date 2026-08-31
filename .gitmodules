@@ -1,0 +1,5 @@
+[submodule "3rd/oldschool-clientc"]
+	path = 3rd/oldschool-clientc
+	url = https://github.com/MRobertEvers/oldschool-clientc.git
+	branch = v3
+	shallow = true

@@ -1,17 +1,32 @@
 CONFIG_IDF_TARGET="esp32s3"
 
 # Flash
-CONFIG_ESPTOOLPY_FLASHSIZE_4MB=y
+CONFIG_ESPTOOLPY_FLASHSIZE_8MB=y
 CONFIG_PARTITION_TABLE_CUSTOM=y
 CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"
 
-# PSRAM (required for toridraw lookup tables and framebuffer)
-CONFIG_SPIRAM=y
-CONFIG_SPIRAM_MODE_OCT=y
-CONFIG_SPIRAM_SPEED_80M=y
-CONFIG_SPIRAM_USE_MALLOC=y
-CONFIG_SPIRAM_MALLOC_ALWAYSINTERNAL=4096
-CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY=y
+#
+# NO PSRAM REQUIREMENT ANY MORE, and that is a consequence of the migration
+# rather than a relaxation.
+#
+# The old build initialised ToriDraw's lookup tables at runtime: 185 KB of
+# writable storage at 16bpp, most of it the 64K-entry HSL palette, which did
+# not fit beside a 115 KB framebuffer in 512 KB of internal RAM. Octal PSRAM
+# was how it fitted.
+#
+# The tables are now generated as `const` and linked into .rodata, so they sit
+# in flash and cost no RAM at all (TORIDRAW_TABLES_PRECOMPUTED; see
+# scripts/gen-const-tables.ps1). What is left in RAM is the framebuffer and
+# the mini view, which internal DRAM holds on its own -- so this firmware runs
+# on an ESP32-S3 module with no PSRAM fitted, which is what most of them are.
+#
+# A board that HAS PSRAM still boots this: nothing here asks for it. Turn it
+# back on if something later needs the room.
+#
+
+# Performance
+CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ_240=y
+CONFIG_COMPILER_OPTIMIZATION_PERF=y
 
 # Main task stack
 CONFIG_ESP_MAIN_TASK_STACK_SIZE=16384

@@ -1,125 +1,293 @@
 # ESP32-S3 OSRS Model Renderer
 
-ESP-IDF firmware for an **ESP32-S3** driving a **240x240 ST7789** SPI LCD. At build time a model is extracted from the dat1 OSRS cache (`3d-raster/cache`), flashed to a dedicated partition, then decoded and rendered on-device with **rscache** + **toridraw**.
+ESP-IDF firmware for an **ESP32-S3** driving a **240×240 ST7789** SPI LCD. It renders an animated Old School RuneScape model in software — no GPU, no PSRAM — using **[toridraw](3rd/oldschool-clientc/3rd/toridraw)** for the raster and **[rscache](3rd/oldschool-clientc/3rd/rscache)** for the cache formats.
+
+The model, its animation, its textures and toridraw's lookup tables are all baked into flash at build time. The device decodes nothing at boot.
+
+Current subject: the Tree Gnome Village spirit tree (dat2 model **2851**) playing `entendseq`, the idle that fades the orbs in its branches.
+
+---
 
 ## Hardware
 
-| LCD pin | ESP32-S3 GPIO | Notes |
-|---------|---------------|-------|
-| SCLK    | 12            | SPI clock |
-| MOSI    | 11            | SPI data |
-| CS      | 10            | Chip select |
-| DC      | 9             | Data/command |
-| RST     | 8             | Reset |
-| BLK     | 7             | Backlight (active high) |
-| VCC     | 3.3 V         | Use 3.3 V only |
-| GND     | GND           | Common ground |
+| LCD pin | GPIO | Notes |
+|---------|------|-------|
+| SCLK    | 12   | SPI clock — IOMUX pin for SPI2, which is what allows 80 MHz |
+| MOSI    | 11   | SPI data — likewise IOMUX |
+| CS      | −1   | Tied low on this board |
+| DC      | 9    | Data/command |
+| RST     | 8    | Reset |
+| BLK     | 7    | Backlight, active high, driven by LEDC PWM |
+| VCC     | 3.3 V | 3.3 V only |
+| GND     | GND  | |
 
-Default pins are defined in [`main/main.c`](main/main.c).
+Pins are defined at the top of [`main/main.c`](main/main.c).
+
+**No PSRAM.** It was needed once for toridraw's lookup tables; those are `const` in flash now, and so is the model. Everything left fits in internal DRAM.
+
+---
 
 ## Prerequisites
 
-- [ESP-IDF v5.1+](https://docs.espressif.com/projects/esp-idf/en/latest/esp32s3/get-started/index.html)
-- Sibling checkout of [`3d-raster`](../3d-raster) with a dat1 cache at `3d-raster/cache`
-- ESP32-S3 module with **octal PSRAM** (used for the 240x240 framebuffer)
+- ESP-IDF v5.1+
+- A host `gcc` on `PATH` (MinGW is fine) to build the bake tools. `HOST_CC` overrides.
+- **The OSRS caches**, which are *not* vendored — see below.
+
+### Libraries: vendored as a submodule
+
+`toridraw`, `rscache` and `toridraw_rscache` come from
+[`oldschool-clientc`](https://github.com/MRobertEvers/oldschool-clientc), pinned
+as a submodule at [`3rd/oldschool-clientc`](3rd/oldschool-clientc).
+
+```powershell
+git clone git@github.com:MRobertEvers/esp32-xmas.git
+cd esp32-xmas
+git submodule update --init --recursive
+```
+
+`--recursive` matters: the nested `OSRS-Content` submodule supplies `all.seq`,
+which is where the animation frame ids and their hold times come from.
+
+This used to be `../oldschool-clientc` — whatever happened to be checked out
+next to this repo on the machine doing the build. That is not a version. The
+Xtensa raster kernels this client depends on are developed in that repo, so two
+working copies routinely meant two different firmwares from the same source
+tree, with nothing recording the difference.
+
+To build against a live working copy of the library instead of the pin:
+
+```powershell
+idf.py -DCLIENTC_DIR=C:\path\to\oldschool-clientc build
+```
+
+### Caches: local, not vendored
+
+The caches are gigabytes of game data and are gitignored in *both* repos, so the
+submodule carries the libraries and the configs but **no cache**. They get their
+own root, defaulting to a sibling checkout:
+
+| Variable | Default | |
+|---|---|---|
+| `CACHE_ROOT` | `../oldschool-clientc` | where the caches live |
+| `ANIM_CACHE_DIR` | `${CACHE_ROOT}/cache.osrs239` | dat2 cache |
+| `CACHE_DIR` | `${CACHE_ROOT}/cache.rs289lc` | dat1 cache |
+
+Pointing these at the submodule would look tidier and would silently break every
+fresh clone, because the directory exists and is empty.
 
 ## Build and flash
 
-From the project root:
-
 ```powershell
-. .\scripts\export-idf.ps1
+. C:\Users\<you>\esp\esp-idf\export.ps1
 idf.py set-target esp32s3
 idf.py build
-idf.py -p COM5 flash monitor
+idf.py -p COM3 flash monitor
 ```
 
-`idf.py build` automatically:
+`idf.py build` runs three generators before compiling:
 
-1. Builds the host `extract_model` tool (first time only)
-2. Extracts model archive **7** from `../3d-raster/cache` into `build/model.bin`
-3. Links toridraw/rsmodel from `../3d-raster` sources
-4. Precomputes toridraw math/HSL lookup tables into flash (`.rodata`) via `tools/gen_const_tables`
+1. **`scripts/bake-model.ps1`** → `build/gen/xmas_baked.c`. The model, the rig, every animation frame and every texture, as `const` arrays.
+2. **`scripts/gen-const-tables.ps1`** → `build/gen/toridraw_tables_precomputed.c`. toridraw's HSL palette and trigonometry, for the configured pixel format.
+3. **`scripts/extract-model.ps1`** → `build/model.bin`, flashed to the `model` partition.
 
-`idf.py flash` writes both the firmware and `model.bin` to the `model` flash partition.
+All three track their CMake cache variables, so changing the model re-bakes.
 
-### Choose a different model
+---
 
-Pass a CMake cache variable when configuring/building:
+## Choosing a model and animation
 
 ```powershell
-idf.py -DMODEL_ID=42 build
-idf.py -DMODEL_ID=9424 build
+idf.py -DANIM_MODEL=2851 -DANIM_SEQ=entendseq build
 ```
 
-Or extract manually:
+| Variable | Default | Meaning |
+|---|---|---|
+| `ANIM_MODEL` | `2851` | dat2 model id |
+| `ANIM_SEQ` | `entendseq` | sequence name in `all.seq` |
+| `ANIM_CACHE_DIR` | `${CACHE_ROOT}/cache.osrs239` | dat2 cache |
 
-```powershell
-.\scripts\extract-model.ps1 -ModelId 42 -CacheDir C:\path\to\cache
+### Pick a sequence that actually animates this model
+
+Some sequences drive **two** models and hide whichever is not current, by collapsing every one of its vertices onto a single point. Render one model of such a pair and roughly half the frames draw nothing at all — which looks like flicker, and is the animation behaving correctly.
+
+`pog_spirit_tree_anim` is one of these: `models=49769,49771`, cross-faded by `pog_spirit_tree_transform`. 48 of its 99 poses came out with bounds `radius 0`.
+
+The firmware checks for this at boot and says so:
+
+```
+all 12 poses draw
 ```
 
-## What you should see
-
-A rotating 3D OSRS model on a dark blue background.
-
-## Project layout
+or, if you have picked one of those sequences:
 
 ```
-.
-├── CMakeLists.txt          # MODEL_ID, cache path, model.bin flash hook
-├── partitions.csv          # factory app + model data partition
-├── components/
-│   ├── rsmodel/            # model_new_decode from 3d-raster rscache
-│   └── toridraw/           # software renderer from 3d-raster
-├── tools/extract_model/    # host cache extractor
-├── scripts/
-│   ├── extract-model.ps1
-│   └── export-idf.ps1
-└── main/main.c
+W: 48 of 99 poses draw nothing -- the sequence probably drives a
+   second model that this one is hidden for
 ```
 
-## Customization
+A `readyanim` has no partner: it loops, and every frame has geometry.
 
-- **GPIO pins:** edit `PIN_LCD_*` in [`main/main.c`](main/main.c)
-- **Cache location:** `idf.py -DCACHE_DIR=C:\path\to\cache build`
-- **3d-raster location:** `idf.py -DRASTER_DIR=C:\path\to\3d-raster build`
-- **Display tuning:** see `lcd_init()` in [`main/main.c`](main/main.c)
+### A sequence can hide part of a model on purpose
 
-## License
+Picking a sequence that animates the model is not the same as picking one that
+shows all of it. Model 2851 has two idles, and `all.loc` uses them to mean
+different things:
 
-Example code — use and modify freely for your projects.
+| loc | anim | orbs |
+|---|---|---|
+| `spirittree_big_2ops` | `entready` | hidden |
+| `spirittree_big_2ops_orbs` | `entendseq` | fading |
 
+The rig has two type-5 (transparency) groups. `entready` holds them at a
+constant +16 and +32 on every frame -- and +32x8 = 256, which clamps to 255,
+so the orbs are fully hidden. That is correct: that loc has no orbs.
+`entendseq` ramps the second group 20 -> 6 and back and dips the first to -10,
+which is the fade.
 
+So "the orbs do not fade" had two different causes in sequence, and only the
+first was a bug: the model had no face bones baked, so no type-5 op ran at all;
+and then the sequence in use genuinely asked for them to be hidden.
 
-## SPI Mode settings
+---
 
-Why Mode 3 is Needed: The "Missing CS" Problem
-In a standard SPI setup, the Chip Select (CS) pin acts as a reset button for the display's internal communication logic. When CS goes low, the display wakes up and gets ready to receive exactly 8 bits. When CS goes high, the transaction is over. If there was a glitch and it only received 7 bits, the high CS resets the counter anyway, so the next byte starts perfectly aligned.
+## Lighting
 
-Because your display lacks a physical CS pin, its internal CS line is permanently hardwired to Ground. The display is always listening, and its bit-counter never resets. It relies 100% on counting exactly 8 clock pulses per byte to stay aligned.
+Applied at bake time, so the device receives finished colours and never lights anything.
 
-This is where the SPI Mode becomes critical. The modes define the Clock Polarity (CPOL) and Clock Phase (CPHA)—essentially, what the clock line does when it is not sending data, and when it samples the data.
+```
+lightness = ambient + (L·N) / (attenuation × face_count)
+```
 
-SPI Mode 0 (CPOL=0): The clock line idles LOW.
+That result then *scales* each face's own base lightness, clamped to `[2,126]`.
 
-SPI Mode 3 (CPOL=1): The clock line idles HIGH.
+| Variable | Default | Effect |
+|---|---|---|
+| `LIGHT_AMBIENT` | `128` | The floor. Slides the whole model brighter or darker. |
+| `LIGHT_ATTENUATION` | `192` | **The contrast knob.** Divides the directional term, so *lower* is a wider swing. Reference is 768. |
+| `LIGHT_GAMMA` | `1.0` | Re-curves the distribution. A **brightness** knob — see below. |
+| `LIGHT_DIR` | `-50,-10,-50` | Light vector. |
 
-Both modes technically sample data on the rising edge of the clock signal, which the ST7789 controller accepts. The failure happens during initialization. When the ESP32 boots, its GPIO pins float before the SPI peripheral takes over and configures them.
+Every bake prints what it did:
 
-If you use Mode 0, the clock line is trying to idle low. As the ESP32 initializes the bus, tiny voltage spikes or the transition from a floating state to a driven low state can cause a microscopic electrical bounce. The always-listening display sees that bounce as a "ghost" clock pulse. Now your bit-counter is off by one. You send 10101010, but the display reads it shifted by one bit, permanently garbling every initialization command you send.
+```
+lighting: ambient 128, attenuation 192, dir -50,-10,-50
+  p10 15, p50 35, p90 120 (inner spread 105)
+  lightness 2..126 (spread 124), mean 49, 7% on the clamps
+```
 
-By switching to Mode 3, you force the clock line to idle HIGH. It is actively driven to 3.3V while idle, making it highly resistant to those micro-glitches during startup. The display waits for a deliberate drop to logic low before it starts counting, keeping your bit-stream perfectly aligned.
+**Read the inner spread, not the range.** The min and max are two faces; p10–p90 is the thousand in between, and that is what the eye reads as contrast. Measured on model 2851:
 
-How to Tell Without a Datasheet
-When you are grabbing generic components from Chinese marketplaces—like the typical "Dollar Express" deals where datasheets are non-existent—you have to rely on visual inspection and empirical testing.
+| ambient | attenuation | gamma | inner spread | mean | clipped |
+|---|---|---|---|---|---|
+| 64 | 768 (reference) | 1.0 | — | 24 | 0% |
+| 96 | 384 | 1.0 | 69 | 37 | 0% |
+| 96 | 192 | 1.0 | 88 | 38 | 2% |
+| 96 | 192 | 0.8 | 87 | 46 | 2% |
+| **128** | **192** | **1.0** | **105** | **49** | **7%** |
+| 96 | 128 | 1.0 | 108 | 39 | 17% |
 
-1. Count the Pins
-This is your most reliable tell. If you look at the silkscreen on the back of the module and see GND, VCC, SCL, SDA, RES, DC, and BLK, but absolutely no CS, CE, or NSS pin, you are dealing with a hardwired-CS display. Default immediately to SPI Mode 3.
+`attenuation` is the only knob that moves the inner spread. **Gamma does not add contrast** — measured, it moved the mean 37 → 73 while *shrinking* inner spread 69 → 55. It is there for a model that is too dark, not one that is too flat.
 
-(Note: These generic boards often confusingly label the SPI clock as SCL and MOSI as SDA, which are I2C naming conventions, but if it has a DC (Data/Command) pin, it is definitely SPI).
+`clipped` is the share of face corners pinned at 2 or 126, which have lost their shading. 7% is the price of the current default; `-DLIGHT_AMBIENT=96 -DLIGHT_ATTENUATION=192 -DLIGHT_GAMMA=0.8` is the same contrast at 2%.
 
-2. Identify the Controller Family
-Certain form factors have notorious default behaviors. The 1.3-inch to 1.54-inch 240x240 IPS displays almost universally use the ST7789 controller. To save space and simplify wiring for microcontrollers with limited GPIO, the manufacturers often omit the CS pin trace entirely. If you buy a 240x240 display and it has 7 pins, expect to use Mode 3.
+---
 
-3. The "Try It and See" Method
-If you are completely unsure, it is 100% safe to just test it. Sending Mode 0 data to a Mode 3 display (or vice versa) will not fry the electronics; it just results in a blank screen or a screen filled with static white noise because the initialization registers received garbage data. If Mode 0 gives you a blank screen on a new module, flip it to Mode 3 before you start checking your wiring.
+## Animation timing
+
+Sequences run on the reference client's **50 Hz** cycle, and each frame carries its own hold time.
+
+That hold time lives **only in the seq config** — `frame=<packed id>,<ticks>` in `all.seq`. The frame archive does not carry it, so nothing downstream can recover it if the packer drops it. `entendseq` holds its 18 frames for 4-5 ticks: about 90 ms a pose. (`entready`, the other idle for this rig, holds for 21.)
+
+The render loop derives the animation phase from `esp_timer` rather than counting passes, so playback rate does not change when render cost does. The boot log reports a measured rate:
+
+```
+frame 4: 44.2 fps, 2.0 poses/s  visible=1  7794 px  anim 1.06 ms  raster 5.74 ms  blit 0.25 ms
+```
+
+Both numbers are per wall-clock second. Counting frames and multiplying by an assumed period produces a rate that lies whenever the loop misses its period.
+
+---
+
+## Textures
+
+A textured face carries a texture **id**, not texels, and toridraw's texture map starts empty. **Its raster silently skips any face whose id is not registered** — no error, no gap in the depth order. An unregistered texture is indistinguishable from a model with no textured faces.
+
+The bake resolves each id the model references to its cache sprite, resamples it to 128×128 ARGB (64 KB of `.rodata` each) and emits it; `main.c` registers them with `ToriDraw_MiniSetTexture` before the first draw. Boot reports the count:
+
+```
+registered 1 texture
+```
+
+---
+
+## Alpha
+
+Two independent things, both of which have to work.
+
+**Static alpha** — `face_alphas` is a transparency byte per face, 0 opaque to 255 hidden (254 and 255 are render-type sentinels, not levels).
+
+**Animated alpha** — a framemap transform of **type 5** adds to `face_alphas` for a group of faces. It is the only transform that touches faces rather than vertices, and it needs *two* things beyond the vertex path: a writable `face_alphas`, and the model's **face** bone map, which is not the vertex one. Without either, `ToriDraw_ModelApplyTransform` returns immediately and the model animates perfectly except that nothing ever fades.
+
+So `face_alphas` is live RAM seeded from a const `original_face_alphas`, exactly as the vertices are — see [`main/xmas_baked.h`](main/xmas_baked.h).
+
+Boot verifies both, per level:
+
+```
+rig: 53 transform groups, 2 of them alpha fades
+alpha honoured (420 of 1000 faces)
+  alpha 112 (opacity 143/255): 18 faces, blended
+  alpha  80 (opacity 175/255): 192 faces, blended
+  alpha 144 (opacity 111/255): 210 faces, blended
+```
+
+Each line is an A/B: that level is forced opaque and the frame is re-rendered and hashed. Aggregate alpha passing does not prove every level does — a model with three levels passes the aggregate test if only one survives.
+
+---
+
+## Display
+
+**Pixel format is `TORIDRAW_PF_RGB565_BE`** — RGB565 with the high byte first, which is what an SPI ST7789 clocks out. The palette is baked in the panel's own byte order, so there is no per-frame conversion pass. The Xtensa raster kernels serve both `RGB565` and `RGB565_BE` from one implementation.
+
+**Backlight** is LEDC PWM (20 kHz, 11-bit, squared for perceptual response) at `LCD_BL_BRIGHTNESS_PCT` — 35 by default. A plain GPIO has exactly one brightness, and at full output this panel washes out.
+
+**Background is black.** A lit background spends contrast before the model gets any; the previous dark navy read as grey haze behind the backlight, and the model's own dark faces sat below it.
+
+### Frame budget
+
+At 80 MHz the 115200-byte frame is 11.5 ms on the wire, against ~7 ms of render. Measured frame time is 30 ms.
+
+The DMA transfer is asynchronous, but with **one** framebuffer that buys nothing: rendering the next frame writes the same 115 KB the panel is reading, so the two serialise wherever the wait goes. A second framebuffer would genuinely overlap them and does not fit — 115 KB against the ~112 KB of internal DRAM left after the view. `blit_wait()` is therefore a *correctness* barrier against tearing, not a performance one.
+
+---
+
+## Memory
+
+Baking is what removes the PSRAM requirement. Decoding the original animated model at boot wanted 406 KB against 311 KB of internal DRAM, and fragmented what remained — 229 KB free in a largest block of 55 KB, which held neither the view nor the framebuffer.
+
+| | |
+|---|---|
+| Model, rig, frames, textures | `.rodata` (flash) |
+| toridraw palette + trig tables | `.rodata` (flash) |
+| Live vertices | 3 × `int16_t` × vertex count (~3 KB) |
+| Live face alphas | 1 byte × face count (~1 KB) |
+| toridraw view (scratch) | ~113 KB |
+| Framebuffer | 115 KB, DMA-capable |
+
+See [`tools/bake_model/bake_model.c`](tools/bake_model/bake_model.c) for the full reasoning.
+
+---
+
+## Boot diagnostics
+
+Several checks stayed in after they caught real bugs. They cost about 100 ms total and each replaces a visual comparison against a game client with one log line.
+
+| Line | Catches |
+|---|---|
+| `all N poses draw` | A sequence that hides this model for half its frames |
+| `registered N textures` | Textures never registered, so textured faces silently skipped |
+| `rig: N groups, M alpha fades` | A rig that fades, on a model with no face bones to fade |
+| `alpha honoured (N of M faces)` | Alpha not reaching the raster at all |
+| `alpha K: N faces, blended` | One alpha level being dropped while others work |
+| `X fps, Y poses/s` | A loop that is not holding its period |
+
+Every one of these corresponds to a bug that rendered a plausible-looking image.
