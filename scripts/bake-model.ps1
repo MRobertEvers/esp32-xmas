@@ -96,7 +96,17 @@ if (-not $rebuild) {
 }
 if ($rebuild) {
     Write-Host "Building bake_model.exe..." -ForegroundColor Cyan
+    # -DTORIDRAW_TEXTURE_ID_CAPACITY MUST match components/toridraw/CMakeLists.txt.
+    # It sits inside the mini view's arena, so the `view_bytes` this tool records
+    # in a bundle is the device's number only if both were built with the same
+    # value -- and a bundle that understates the arena is one the device accepts
+    # and then overruns.
+    #
+    # -I$RepoRoot\main is for xmb_format.h: one definition of the bundle layout,
+    # shared by the writer here and the reader on the device.
     & $CcPath -std=c11 -O1 -w `
+        -DTORIDRAW_TEXTURE_ID_CAPACITY=256 `
+        "-I$RepoRoot\main" "-I$RepoRoot\tools" `
         "-I$RsCacheDir\include" "-I$RsCacheDir\src" "-I$RsCacheDir\tools\common" `
         "-I$RsCacheDir\src\datatypes" `
         "-I$Third\toridraw" "-I$Third\toridraw_rscache\include" `

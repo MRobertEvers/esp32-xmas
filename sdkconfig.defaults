@@ -30,3 +30,78 @@ CONFIG_COMPILER_OPTIMIZATION_PERF=y
 
 # Main task stack
 CONFIG_ESP_MAIN_TASK_STACK_SIZE=16384
+
+#
+# NETWORKING
+#
+# Every value below is a RAM decision, not a preference. The budget this
+# firmware has to fit is:
+#
+#   341,760 B  DIRAM on the part
+#   -83,903 B  static .text/.data/.bss before any of this
+#  -115,200 B  framebuffer (240*240*2), now .bss -- see main.c
+#   -81,920 B  mini view arena, now .bss -- see MODEL_VIEW_ARENA_BYTES
+#   ---------
+#    ~60,700 B  left, and WiFi + lwIP + httpd has to live in it.
+#
+# A default IDF WiFi build wants appreciably more than that, so the defaults
+# that cost the most RAM are turned down here rather than discovered as a
+# malloc failure three minutes into a render.
+#
+
+# The device is its own access point during provisioning and a station after,
+# so both are built. AP+STA coexist only while provisioning.
+CONFIG_ESP_WIFI_SOFTAP_SUPPORT=y
+
+# Static RX buffers are 1600 B each and are allocated whether traffic arrives
+# or not: 10 of them is 16 KB of permanently resident buffer for a device
+# whose busiest moment is a 300 KB download. Four is the documented floor.
+CONFIG_ESP_WIFI_STATIC_RX_BUFFER_NUM=4
+CONFIG_ESP_WIFI_DYNAMIC_RX_BUFFER_NUM=8
+CONFIG_ESP_WIFI_TX_BUFFER_TYPE=1
+CONFIG_ESP_WIFI_DYNAMIC_TX_BUFFER_NUM=8
+
+# AMPDU is throughput at the cost of a per-session reorder buffer. This device
+# streams a model bundle occasionally and serves a 20 KB page; neither notices
+# the difference, and the buffers are tens of KB.
+CONFIG_ESP_WIFI_AMPDU_TX_ENABLED=n
+CONFIG_ESP_WIFI_AMPDU_RX_ENABLED=n
+
+# lwIP. The sockets are the important one: Safari opens several connections in
+# parallel and keeps them alive, so the httpd needs more than the handful a
+# single-client assumption would suggest -- but each costs memory, so this is
+# sized for one phone plus its speculative connections, not for a crowd.
+CONFIG_LWIP_MAX_SOCKETS=10
+CONFIG_LWIP_TCP_SND_BUF_DEFAULT=2880
+CONFIG_LWIP_TCP_WND_DEFAULT=2880
+CONFIG_LWIP_IPV6=n
+
+# Safari's request headers run past the 512-byte default and the server answers
+# a truncated request with a failure the phone shows as a blank page.
+CONFIG_HTTPD_MAX_REQ_HDR_LEN=1024
+
+# WiFi features this device does not use. Each is .text in IRAM or .bss that
+# is linked in whether or not it is reached, and on this part IRAM and DRAM
+# come out of the same pool -- so moving WiFi's hot paths back to flash returns
+# the space to the heap the renderer and the HTTP server share.
+CONFIG_ESP_WIFI_IRAM_OPT=n
+CONFIG_ESP_WIFI_RX_IRAM_OPT=n
+CONFIG_ESP_WIFI_SLP_IRAM_OPT=n
+CONFIG_ESP_WIFI_ENABLE_WPA3_SAE=n
+CONFIG_ESP_WIFI_SOFTAP_SAE_SUPPORT=n
+CONFIG_ESP_WIFI_ENABLE_WIFI_TX_STATS=n
+CONFIG_ESP_WIFI_ENABLE_WIFI_RX_STATS=n
+
+# esp_wifi keeps no NVS record of its own: settings.c owns the credentials and
+# net.c sets WIFI_STORAGE_RAM, so this is a second copy that can only disagree.
+CONFIG_ESP_WIFI_NVS_ENABLED=n
+
+# The default receive mailbox is 32 pointers deep, sized for a device that
+# routes. This one answers a phone.
+CONFIG_LWIP_TCPIP_RECVMBOX_SIZE=6
+CONFIG_LWIP_UDP_RECVMBOX_SIZE=6
+CONFIG_LWIP_TCP_RECVMBOX_SIZE=6
+
+# printf without the floating-point formatter. The only doubles this firmware
+# prints are in the once-a-second frame report, which nano format still handles.
+CONFIG_NEWLIB_NANO_FORMAT=y

@@ -149,31 +149,11 @@ set(TORIDRAW_PIXEL_FORMAT_NAME "TORIDRAW_PF_RGB565_BE"
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 project(esp32_xmas)
 
-set(MODEL_BIN "${CMAKE_BINARY_DIR}/model.bin")
 set(TORIDRAW_TABLES_C "${CMAKE_BINARY_DIR}/gen/toridraw_tables_precomputed.c")
-set(EXTRACT_SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/scripts/extract-model.ps1")
 set(GEN_CONST_TABLES_SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/scripts/gen-const-tables.ps1")
 set(BAKE_SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/scripts/bake-model.ps1")
 set(XMAS_BAKED_C "${CMAKE_BINARY_DIR}/gen/xmas_baked.c")
 
-add_custom_command(
-    OUTPUT "${MODEL_BIN}"
-    COMMAND powershell -NoProfile -ExecutionPolicy Bypass -File "${EXTRACT_SCRIPT}"
-        -ClientcDir "${CLIENTC_DIR}"
-        -ModelId ${MODEL_ID}
-        -ModelFile "${MODEL_FILE}"
-        -CacheDir "${CACHE_DIR}"
-        -AnimCacheDir "${ANIM_CACHE_DIR}"
-        -AnimRev "${ANIM_REV}"
-        -AnimModel "${ANIM_MODEL}"
-        -AnimSeq "${ANIM_SEQ}"
-        -OutFile "${MODEL_BIN}"
-    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-    COMMENT "Staging the model blob to flash"
-    VERBATIM
-)
-
-add_custom_target(model_bin ALL DEPENDS "${MODEL_BIN}")
 
 add_custom_command(
     OUTPUT "${TORIDRAW_TABLES_C}"
@@ -218,10 +198,18 @@ add_custom_command(
 add_custom_target(xmas_baked_gen ALL DEPENDS "${XMAS_BAKED_C}")
 add_dependencies(__idf_main xmas_baked_gen)
 
-partition_table_get_partition_info(model_size "--partition-name model" "size")
-partition_table_get_partition_info(model_offset "--partition-name model" "offset")
-
-if(model_size AND model_offset)
-    esptool_py_flash_to_partition(flash "model" "${MODEL_BIN}")
-    add_dependencies(flash model_bin)
-endif()
+#
+# THE `model` PARTITION AND ITS BLOB ARE GONE.
+#
+# scripts/extract-model.ps1 staged a model into build/model.bin and flashed it
+# to a `model` SPIFFS partition, in the XMA1 container from
+# tools/extract_model/pack_anim.c. Nothing read it: main.c stopped decoding at
+# boot when the model became const C, and the partition sat there being flashed
+# on every build.
+#
+# What replaced it is main/xmb_format.h -- a bundle the DEVICE downloads into
+# one of two `mdl_` slots and maps in place, rather than something the build
+# stages for it. See server/bake_bundles.py to produce one and main/model_store.c
+# to see how it arrives. The script and pack_anim.c are left in the tree; they
+# are simply no longer part of a build.
+#

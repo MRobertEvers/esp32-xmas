@@ -52,8 +52,12 @@
 #include "dat2_sprites.h"
 #include "dat2_texture.h"
 
+#include "sha256.h"
+#include "xmb_format.h"
+
 #include <toridraw_rscache.h>
 #include "toridraw.h"
+#include "toridraw_mini.h"
 #include "toridraw_animation.h"
 #include "toridraw_model_transform.h"
 
@@ -63,7 +67,13 @@ static FILE* g_out;
  * two; the cap exists so the scan is a fixed array rather than a growable one,
  * and it reports rather than truncates silently. */
 #define TEX_MAX 32
-static int g_tex_ids[TEX_MAX];
+
+/** One baked texture and the id the model's faces name it by. */
+struct ResolvedTexture
+{
+    int id;
+    struct ToriDraw_Texture* tex;
+};
 
 /*
  * One array, or nothing at all.
@@ -295,9 +305,18 @@ report_contrast(const struct ToriDraw_Model* m, const struct ToriDraw_RSCacheLig
  * implements, and it quarters the flash at the cost of visible blockiness on a
  * face that fills a fifth of this panel.
  */
+/*
+ * Resolve every texture the model's faces name, into memory.
+ *
+ * Split from emitting it because there are now two emitters -- const C for the
+ * firmware's own baked model, and a binary bundle for the ones the device
+ * downloads -- and a texture that resampled differently between the two would
+ * be a difference nothing tests for. One resolve, two writers.
+ */
 static int
-emit_textures(struct Tool_Dat2Cache* cache, const struct RSCache* profile,
-              const struct ToriDraw_Model* m, int dest_size)
+resolve_textures(struct Tool_Dat2Cache* cache, const struct RSCache* profile,
+                 const struct ToriDraw_Model* m, int dest_size,
+                 struct ResolvedTexture* out, int out_max)
 {
     struct RSCache_Dat2DiskArchive* tex_arch = NULL;
     struct RSCache_FileList* tex_files = NULL;
@@ -363,7 +382,6 @@ emit_textures(struct Tool_Dat2Cache* cache, const struct RSCache* profile,
         struct RSCache_Dat2SpritePack* pack = NULL;
         struct ToriDraw_Texture* tex = NULL;
         int sprites_table;
-        int n;
 
         if( pos < 0 || pos >= tex_files->file_count || tex_files->file_sizes[pos] <= 0 )
         {
@@ -412,23 +430,18 @@ emit_textures(struct Tool_Dat2Cache* cache, const struct RSCache* profile,
         {
             fprintf(stderr, "texture %d: sprite %d did not bake\n", id, def->sprite_ids[0]);
         }
+        else if( emitted >= out_max )
+        {
+            fprintf(stderr, "texture %d: past the %d a bundle holds\n", id, out_max);
+            ToriDraw_TextureFree(tex);
+        }
         else
         {
-            n = tex->width * tex->height;
-            fprintf(g_out, "static const int32_t k_tex%d[] = {", id);
-            for( int i = 0; i < n; i++ )
-                fprintf(g_out, "%s%d", (i && (i % 16) == 0) ? ",\n" : (i ? "," : ""),
-                        tex->texels[i]);
-            fprintf(g_out, "};\n");
-            fprintf(g_out,
-                    "static const struct ToriDraw_Texture k_texdef%d = { (int*)k_tex%d, "
-                    "%d, %d, %d, /*borrowed*/ 1, %d, %d };\n",
-                    id, id, tex->width, tex->height, (int)tex->opaque,
-                    tex->animation_direction, tex->animation_speed);
-            g_tex_ids[emitted++] = id;
+            out[emitted].id = id;
+            out[emitted].tex = tex;
+            emitted++;
             fprintf(stderr, "texture %d: %dx%d, %s\n", id, tex->width, tex->height,
                     tex->opaque ? "opaque" : "with alpha");
-            ToriDraw_TextureFree(tex);
         }
         if( pack )
             RSCache_Dat2SpritePackFree(pack);
@@ -440,6 +453,342 @@ emit_textures(struct Tool_Dat2Cache* cache, const struct RSCache* profile,
     RSCache_FileListFree(tex_files);
     RSCache_Dat2DiskArchiveFree(tex_arch);
     return emitted;
+}
+
+/* ---- the binary bundle ------------------------------------------------ */
+
+/*
+ * The same model, written as a flat file the device maps out of flash rather
+ * than as C the firmware is compiled around. See main/xmb_format.h for the
+ * layout and for why the pointers are not in the file.
+ *
+ * Everything here is a plain copy of an array the bake already produced. What
+ * this writer does that the C emitter does not is arithmetic: it lays the
+ * sections out, records where each starts, and computes what the model will
+ * cost the device's view -- which is the number that lets the device refuse a
+ * model it cannot draw before it erases the one it can.
+ */
+
+struct BundleWriter
+{
+    uint8_t* buf;
+    size_t used;
+    size_t cap;
+    int failed;
+};
+
+static void
+bw_reserve(struct BundleWriter* w, size_t extra)
+{
+    if( w->used + extra <= w->cap )
+        return;
+
+    while( w->cap < w->used + extra )
+        w->cap = w->cap ? w->cap * 2 : 65536;
+
+    w->buf = realloc(w->buf, w->cap);
+    if( !w->buf )
+        w->failed = 1;
+}
+
+/**
+ * Append one section and record where it landed.
+ *
+ * Every section starts 4-aligned, because the device does not copy these out
+ * of the mapping -- it points ToriDraw's int32 and int16 arrays straight at
+ * them, and an unaligned int32 load on Xtensa is a fault rather than a slow
+ * read.
+ */
+static void
+bw_section(struct BundleWriter* w, struct XmbHeader* h, enum XmbSection sec,
+           const void* data, size_t bytes)
+{
+    while( w->used & 3u )
+    {
+        bw_reserve(w, 1);
+        if( w->failed )
+            return;
+        w->buf[w->used++] = 0;
+    }
+
+    bw_reserve(w, bytes);
+    if( w->failed )
+        return;
+
+    h->section_offset[sec] = (uint32_t)w->used;
+    h->section_size[sec] = (uint32_t)bytes;
+
+    if( bytes && data )
+        memcpy(w->buf + w->used, data, bytes);
+    w->used += bytes;
+}
+
+/** A bone group table, flattened: the sizes, then every group's members end to
+ *  end in group order, so a group starts at the sum of the sizes before it. */
+static void
+bw_groups_u16(struct BundleWriter* w, struct XmbHeader* h, enum XmbSection sizes_sec,
+              enum XmbSection data_sec, uint16_t* const* groups, const uint16_t* sizes,
+              int count)
+{
+    uint16_t* flat = NULL;
+    size_t total = 0;
+    size_t o = 0;
+
+    if( count <= 0 || !groups || !sizes )
+    {
+        bw_section(w, h, sizes_sec, NULL, 0);
+        bw_section(w, h, data_sec, NULL, 0);
+        return;
+    }
+
+    for( int i = 0; i < count; i++ )
+        total += sizes[i];
+
+    flat = malloc(total * sizeof(uint16_t) + 1);
+    for( int i = 0; i < count; i++ )
+    {
+        if( sizes[i] && groups[i] )
+            memcpy(flat + o, groups[i], (size_t)sizes[i] * sizeof(uint16_t));
+        o += sizes[i];
+    }
+
+    bw_section(w, h, sizes_sec, sizes, (size_t)count * sizeof(uint16_t));
+    bw_section(w, h, data_sec, flat, total * sizeof(uint16_t));
+    free(flat);
+}
+
+static int
+write_bundle(const char* path, const struct ToriDraw_Model* m,
+             const struct ToriDraw_Animation* anim, const struct ResolvedTexture* tex,
+             int tex_n, int model_id, const char* name, const char* seq,
+             const struct ToriDraw_MiniLimits* limits,
+             const struct ToriDraw_BoundsCylinder* widest)
+{
+    struct BundleWriter w;
+    struct XmbHeader h;
+    struct Sha256 sha;
+    FILE* f;
+    size_t payload;
+
+    memset(&w, 0, sizeof(w));
+    memset(&h, 0, sizeof(h));
+
+    h.magic = XMB_MAGIC;
+    h.version = XMB_VERSION;
+    h.model_id = model_id;
+    snprintf(h.name, sizeof(h.name), "%s", name ? name : "");
+    snprintf(h.seq, sizeof(h.seq), "%s", seq ? seq : "");
+
+    h.vertex_count = m->vertex_count;
+    h.face_count = m->face_count;
+    h.textured_face_count = m->textured_face_count;
+    h.face_bone_count = m->face_bones ? m->face_bones->bones_count : 0;
+    h.vertex_bone_count = m->vertex_bones ? m->vertex_bones->bones_count : 0;
+    h.base_length = (anim && anim->base) ? anim->base->length : 0;
+    h.frame_count = anim ? anim->frame_count : 0;
+    h.texture_count = tex_n;
+
+    h.bounds_center_to_top_edge = widest->center_to_top_edge;
+    h.bounds_center_to_bottom_edge = widest->center_to_bottom_edge;
+    h.bounds_min_y = widest->min_y;
+    h.bounds_max_y = widest->max_y;
+    h.bounds_radius = widest->radius;
+    h.bounds_min_z_depth_any_rotation = widest->min_z_depth_any_rotation;
+
+    h.view_bytes = (uint32_t)ToriDraw_MiniViewBytes(limits);
+    h.limit_max_faces = limits->scene.max_faces;
+    h.limit_max_vertices = limits->scene.max_vertices;
+    h.limit_depth_levels = limits->scene.depth_levels;
+    h.limit_textures = limits->scene.textures ? 1u : 0u;
+
+#define SEC(id, ptr, n, type) \
+    bw_section(&w, &h, (id), (ptr), (ptr) ? (size_t)(n) * sizeof(type) : 0)
+
+    SEC(XMB_SEC_ORIG_VX, m->original_vertices_x, m->vertex_count, int16_t);
+    SEC(XMB_SEC_ORIG_VY, m->original_vertices_y, m->vertex_count, int16_t);
+    SEC(XMB_SEC_ORIG_VZ, m->original_vertices_z, m->vertex_count, int16_t);
+    SEC(XMB_SEC_FACE_A, m->face_indices_a, m->face_count, int16_t);
+    SEC(XMB_SEC_FACE_B, m->face_indices_b, m->face_count, int16_t);
+    SEC(XMB_SEC_FACE_C, m->face_indices_c, m->face_count, int16_t);
+    SEC(XMB_SEC_FACE_COLOR_A, m->face_colors_a, m->face_count, uint16_t);
+    SEC(XMB_SEC_FACE_COLOR_B, m->face_colors_b, m->face_count, uint16_t);
+    SEC(XMB_SEC_FACE_COLOR_C, m->face_colors_c, m->face_count, uint16_t);
+    SEC(XMB_SEC_FACE_TEXTURE, m->face_textures, m->face_count, int16_t);
+    SEC(XMB_SEC_FACE_ALPHA, m->face_alphas, m->face_count, uint8_t);
+    SEC(XMB_SEC_FACE_INFO, m->face_infos, m->face_count, int32_t);
+    SEC(XMB_SEC_FACE_PRIORITY, m->face_priorities, (m->face_count + 1) / 2, uint8_t);
+    SEC(XMB_SEC_FACE_COLOR, m->face_colors, m->face_count, uint16_t);
+    SEC(XMB_SEC_TEX_P, m->textured_p_coordinate, m->textured_face_count, int16_t);
+    SEC(XMB_SEC_TEX_M, m->textured_m_coordinate, m->textured_face_count, int16_t);
+    SEC(XMB_SEC_TEX_N, m->textured_n_coordinate, m->textured_face_count, int16_t);
+#undef SEC
+
+    bw_groups_u16(&w, &h, XMB_SEC_FACE_BONE_SIZES, XMB_SEC_FACE_BONE_DATA,
+                  m->face_bones ? m->face_bones->bones : NULL,
+                  m->face_bones ? m->face_bones->bones_sizes : NULL, h.face_bone_count);
+    bw_groups_u16(&w, &h, XMB_SEC_VERT_BONE_SIZES, XMB_SEC_VERT_BONE_DATA,
+                  m->vertex_bones ? m->vertex_bones->bones : NULL,
+                  m->vertex_bones ? m->vertex_bones->bones_sizes : NULL, h.vertex_bone_count);
+
+    /* The framemap. Its groups are uint8, where the model's bones are uint16. */
+    if( h.base_length > 0 )
+    {
+        const struct ToriDraw_AnimBase* b = anim->base;
+        size_t total = 0;
+        uint8_t* flat;
+        size_t o = 0;
+
+        for( int i = 0; i < b->length; i++ )
+            total += b->bone_group_lengths[i];
+
+        flat = malloc(total + 1);
+        for( int i = 0; i < b->length; i++ )
+        {
+            if( b->bone_group_lengths[i] && b->bone_groups[i] )
+                memcpy(flat + o, b->bone_groups[i], b->bone_group_lengths[i]);
+            o += b->bone_group_lengths[i];
+        }
+
+        bw_section(&w, &h, XMB_SEC_BASE_TYPES, b->types, (size_t)b->length);
+        bw_section(&w, &h, XMB_SEC_BASE_GROUP_SIZES, b->bone_group_lengths,
+                   (size_t)b->length * sizeof(uint16_t));
+        bw_section(&w, &h, XMB_SEC_BASE_GROUP_DATA, flat, total);
+        free(flat);
+    }
+    else
+    {
+        bw_section(&w, &h, XMB_SEC_BASE_TYPES, NULL, 0);
+        bw_section(&w, &h, XMB_SEC_BASE_GROUP_SIZES, NULL, 0);
+        bw_section(&w, &h, XMB_SEC_BASE_GROUP_DATA, NULL, 0);
+    }
+
+    /* The frames: a descriptor table, then all four per-frame arrays end to
+     * end, so one index locates the lot. */
+    if( h.frame_count > 0 )
+    {
+        struct XmbFrame* descs = calloc((size_t)h.frame_count, sizeof(*descs));
+        size_t total = 0;
+        int16_t* flat;
+        size_t o = 0;
+
+        for( int i = 0; i < h.frame_count; i++ )
+            total += (size_t)anim->frames[i].length * 4;
+
+        flat = malloc(total * sizeof(int16_t) + 1);
+        for( int i = 0; i < h.frame_count; i++ )
+        {
+            const struct ToriDraw_AnimFrame* fr = &anim->frames[i];
+            size_t n = (size_t)fr->length;
+
+            descs[i].id = fr->id;
+            descs[i].length = fr->length;
+            descs[i].delay = fr->delay;
+            descs[i].first = (int32_t)o;
+
+            memcpy(flat + o, fr->groups, n * sizeof(int16_t));
+            o += n;
+            memcpy(flat + o, fr->x, n * sizeof(int16_t));
+            o += n;
+            memcpy(flat + o, fr->y, n * sizeof(int16_t));
+            o += n;
+            memcpy(flat + o, fr->z, n * sizeof(int16_t));
+            o += n;
+        }
+
+        bw_section(&w, &h, XMB_SEC_FRAMES, descs, (size_t)h.frame_count * sizeof(*descs));
+        bw_section(&w, &h, XMB_SEC_FRAME_DATA, flat, total * sizeof(int16_t));
+        free(descs);
+        free(flat);
+    }
+    else
+    {
+        bw_section(&w, &h, XMB_SEC_FRAMES, NULL, 0);
+        bw_section(&w, &h, XMB_SEC_FRAME_DATA, NULL, 0);
+    }
+
+    if( tex_n > 0 )
+    {
+        struct XmbTexture* descs = calloc((size_t)tex_n, sizeof(*descs));
+        size_t total = 0;
+        int32_t* flat;
+        size_t o = 0;
+
+        for( int i = 0; i < tex_n; i++ )
+            total += (size_t)tex[i].tex->width * (size_t)tex[i].tex->height;
+
+        flat = malloc(total * sizeof(int32_t) + 1);
+        for( int i = 0; i < tex_n; i++ )
+        {
+            const struct ToriDraw_Texture* t = tex[i].tex;
+            size_t n = (size_t)t->width * (size_t)t->height;
+
+            descs[i].id = tex[i].id;
+            descs[i].width = t->width;
+            descs[i].height = t->height;
+            descs[i].first = (int32_t)o;
+            descs[i].opaque = (int32_t)t->opaque;
+            descs[i].animation_direction = t->animation_direction;
+            descs[i].animation_speed = t->animation_speed;
+
+            memcpy(flat + o, t->texels, n * sizeof(int32_t));
+            o += n;
+        }
+
+        bw_section(&w, &h, XMB_SEC_TEXTURES, descs, (size_t)tex_n * sizeof(*descs));
+        bw_section(&w, &h, XMB_SEC_TEXEL_DATA, flat, total * sizeof(int32_t));
+        free(descs);
+        free(flat);
+    }
+    else
+    {
+        bw_section(&w, &h, XMB_SEC_TEXTURES, NULL, 0);
+        bw_section(&w, &h, XMB_SEC_TEXEL_DATA, NULL, 0);
+    }
+
+    if( w.failed )
+    {
+        fprintf(stderr, "out of memory building the bundle\n");
+        free(w.buf);
+        return 1;
+    }
+
+    /*
+     * The offsets recorded above are from the start of the PAYLOAD, and the
+     * device reads them from the start of the FILE. Shifting them once here,
+     * rather than making every bw_section know about the header, keeps that
+     * arithmetic in one place -- and getting it wrong points every array at
+     * the wrong data with nothing to say so.
+     */
+    for( int i = 0; i < XMB_SECTION_COUNT; i++ )
+        h.section_offset[i] += (uint32_t)sizeof(h);
+
+    payload = w.used;
+    h.total_size = (uint32_t)(sizeof(h) + payload);
+
+    sha256_init(&sha);
+    sha256_update(&sha, w.buf, payload);
+    sha256_final(&sha, h.sha256);
+
+    f = fopen(path, "wb");
+    if( !f )
+    {
+        fprintf(stderr, "cannot write %s\n", path);
+        free(w.buf);
+        return 1;
+    }
+    fwrite(&h, 1, sizeof(h), f);
+    fwrite(w.buf, 1, payload, f);
+    fclose(f);
+
+    fprintf(stderr, "wrote %s: %u bytes, the view will need %u\n", path, h.total_size,
+            h.view_bytes);
+    fprintf(stderr, "sha256 ");
+    for( int i = 0; i < 32; i++ )
+        fprintf(stderr, "%02x", h.sha256[i]);
+    fprintf(stderr, "\n");
+
+    free(w.buf);
+    return 0;
 }
 
 int
@@ -474,6 +823,17 @@ main(int argc, char** argv)
      */
     struct ToriDraw_RSCacheLight light = TORIDRAW_RSCACHE_LIGHT_DEFAULT;
     double gamma = 1.0;
+    /*
+     * Which of the two emitters runs.
+     *
+     * "c" is the firmware's own model, compiled in as const .rodata. "bin" is
+     * a bundle the device downloads and maps out of a flash partition. The
+     * decode, the lighting and the texture resampling above are the same code
+     * either way -- which is the point of having one tool rather than two.
+     */
+    const char* format = "c";
+    const char* name = NULL;
+    const char* seq = NULL;
 
     struct RSCache_Model* raw;
     struct ToriDraw_Model* m;
@@ -505,6 +865,12 @@ main(int argc, char** argv)
                  tok = strtok(NULL, ",") )
                 frame_delays[delay_n++] = (int)strtoul(tok, NULL, 0);
         }
+        else if( strcmp(argv[i], "--format") == 0 && i + 1 < argc )
+            format = argv[++i];
+        else if( strcmp(argv[i], "--name") == 0 && i + 1 < argc )
+            name = argv[++i];
+        else if( strcmp(argv[i], "--seq") == 0 && i + 1 < argc )
+            seq = argv[++i];
         else if( strcmp(argv[i], "--gamma") == 0 && i + 1 < argc )
             gamma = atof(argv[++i]);
         else if( strcmp(argv[i], "--ambient") == 0 && i + 1 < argc )
@@ -609,10 +975,130 @@ main(int argc, char** argv)
         if( decoded > 0 )
             anim = ToriDraw_RSCacheAnimationNew(
                 framemap, (const struct RSCache_Dat2Frame* const*)frames, decoded);
+
+        /*
+         * THE HOLD TIMES GO INTO THE ANIMATION, not into one emitter.
+         *
+         * A frame archive carries the POSE and not how long to hold it: that
+         * lives only in the seq config, as `frame=<id>,<ticks>` in all.seq,
+         * and arrives here through --delays. A decoded frame therefore has
+         * delay 0, and a player that treats 0 as one tick runs the whole
+         * sequence at fifty poses a second.
+         *
+         * This used to be applied while writing the C, which meant the binary
+         * bundle -- added later, emitted from the same animation -- copied the
+         * zeros. The device played a downloaded spirit tree at 50 poses/s
+         * against the baked one's 12.4. Applying it to the animation itself is
+         * what makes the two emitters agree by construction rather than by
+         * both remembering to do it.
+         */
+        for( int f = 0; anim && f < anim->frame_count; f++ )
+            if( f < delay_n && frame_delays[f] > 0 )
+                anim->frames[f].delay = frame_delays[f];
         for( int i = 0; i < decoded; i++ )
             RSCache_Dat2FrameFree(frames[i]);
         free(frames);
         fprintf(stderr, "baked %d of %d frames\n", decoded, frame_n);
+    }
+
+    /*
+     * THE WIDEST POSE, AND WHAT THE VIEW WILL COST, measured here.
+     *
+     * The device used to do this at boot: animate every frame, take the widest
+     * bounding cylinder, and size its view from the result. That is a pass
+     * over the whole sequence before the first frame can be drawn, and it is
+     * arithmetic about the model rather than about the device -- so it belongs
+     * in the bake, and the bundle carries the answers.
+     *
+     * The view cost matters most. ToriDraw_MiniViewBytes here and on the
+     * device are the same function over the same limits, so a bundle can state
+     * exactly what it will need -- and the device can refuse one that will not
+     * fit BEFORE it erases the slot holding the model that does.
+     *
+     * That equality is a build-flag dependency, not just a source one:
+     * TORIDRAW_TEXTURE_ID_CAPACITY is inside the arena, so this tool and the
+     * firmware must be compiled with the same value. scripts/bake-model.ps1
+     * passes it.
+     */
+    struct ToriDraw_ModelHandle bake_hnd = ToriDraw_ModelHandleOwned(m);
+    struct ToriDraw_MiniLimits limits;
+    struct ToriDraw_BoundsCylinder widest_bounds;
+    int widest_extent = 0;
+
+    ToriDraw_ModelSetBoundsCylinder(m);
+    ToriDraw_MiniLimitsForModel(bake_hnd, &limits);
+    widest_bounds = *ToriDraw_ModelGetBoundsCylinder(bake_hnd);
+
+    for( int f = 0; f < (anim ? anim->frame_count : 0); f++ )
+    {
+        const struct ToriDraw_BoundsCylinder* b;
+        int height, e;
+
+        ToriDraw_ModelAnimateReset(m);
+        ToriDraw_ModelAnimateFrame(m, anim->base, &anim->frames[f]);
+        ToriDraw_ModelSetBoundsCylinder(m);
+        ToriDraw_MiniLimitsInclude(&limits, bake_hnd);
+
+        b = ToriDraw_ModelGetBoundsCylinder(bake_hnd);
+        height = b->max_y - b->min_y;
+        e = (2 * b->radius > height) ? 2 * b->radius : height;
+        if( e > widest_extent )
+        {
+            widest_extent = e;
+            widest_bounds = *b;
+        }
+    }
+
+    /* Back to the bind pose: the emitted vertices are original_vertices_*, but
+     * a caller reading the live ones after this should not get whichever frame
+     * happened to be scanned last. */
+    if( anim )
+        ToriDraw_ModelAnimateReset(m);
+
+    /*
+     * THE ARENA FIGURE IS FOR THE DEVICE'S KERNEL LANE, WHICH IS NOT
+     * NECESSARILY THIS ONE.
+     *
+     * The arena carries a 32-byte-per-face stash for the batched raster walk,
+     * and whether it does is decided by TORIDRAW_RASTER_BATCH -- which the
+     * Xtensa presorted-run kernels arm. So the same model costs 75,600 bytes
+     * on a lane without them and 107,728 with, and which one a bundle should
+     * quote depends on how the FIRMWARE was built, not this tool.
+     *
+     * The firmware currently builds without those kernels (see
+     * components/toridraw/CMakeLists.txt for why -- it is what makes a
+     * 240x240 framebuffer fit beside WiFi), so this host build's own answer
+     * happens to match it and is left alone.
+     *
+     * That coincidence is not what keeps the device safe. The number here is
+     * ADVISORY, used by the catalogue so a phone can grey out a model the
+     * display cannot draw; the device recomputes it from the bundle's limits
+     * with its own layout before it trusts any arena bound, in
+     * model_bundle_view_bytes. If the two ever disagree, the device is right.
+     */
+
+    fprintf(stderr, "view will need %u bytes (max_faces %d, max_verts %d, depth %d)\n",
+            (unsigned)ToriDraw_MiniViewBytes(&limits), limits.scene.max_faces,
+            limits.scene.max_vertices, limits.scene.depth_levels);
+
+    /*
+     * The textures, resolved before either emitter runs. The binary path never
+     * opens g_out at all, so this cannot live inside the C emission below.
+     */
+    struct ResolvedTexture textures[TEX_MAX];
+    int tex_n = resolve_textures(&cache, &profile, m, 128, textures, TEX_MAX);
+
+    if( strcmp(format, "bin") == 0 )
+    {
+        int rc = write_bundle(out_path, m, anim, textures, tex_n, model_id, name, seq,
+                              &limits, &widest_bounds);
+
+        for( int i = 0; i < tex_n; i++ )
+            ToriDraw_TextureFree(textures[i].tex);
+        if( framemap )
+            RSCache_Dat2FramemapFree(framemap);
+        tool_dat2_close(&cache);
+        return rc;
     }
 
     g_out = fopen(out_path, "wb");
@@ -877,7 +1363,7 @@ main(int argc, char** argv)
         for( int f = 0; f < anim->frame_count; f++ )
         {
             const struct ToriDraw_AnimFrame* fr = &anim->frames[f];
-            int hold = (f < delay_n && frame_delays[f] > 0) ? frame_delays[f] : fr->delay;
+            int hold = fr->delay;
 
             fprintf(g_out, "  { %d, %d, ", fr->id, fr->length);
             if( fr->length > 0 && fr->groups )
@@ -908,7 +1394,28 @@ main(int argc, char** argv)
 
     /* ---- the textures ------------------------------------------------ */
     {
-        int tex_n = emit_textures(&cache, &profile, m, 128);
+        /*
+         * Resolved above, written here. The texel arrays have to come out
+         * before the table that names them, which is why this is a second
+         * pass rather than part of the resolve.
+         */
+        for( int i = 0; i < tex_n; i++ )
+        {
+            const struct ToriDraw_Texture* t = textures[i].tex;
+            int id = textures[i].id;
+            int n = t->width * t->height;
+
+            fprintf(g_out, "static const int32_t k_tex%d[] = {", id);
+            for( int j = 0; j < n; j++ )
+                fprintf(g_out, "%s%d", (j && (j % 16) == 0) ? ",\n" : (j ? "," : ""),
+                        t->texels[j]);
+            fprintf(g_out, "};\n");
+            fprintf(g_out,
+                    "static const struct ToriDraw_Texture k_texdef%d = { (int*)k_tex%d, "
+                    "%d, %d, %d, /*borrowed*/ 1, %d, %d };\n",
+                    id, id, t->width, t->height, (int)t->opaque, t->animation_direction,
+                    t->animation_speed);
+        }
 
         fprintf(g_out, "\n");
         if( tex_n > 0 )
@@ -916,7 +1423,7 @@ main(int argc, char** argv)
             fprintf(g_out, "static const struct XmasBakedTexture k_textures[] = {\n");
             for( int i = 0; i < tex_n; i++ )
                 fprintf(g_out, "  { %d, (struct ToriDraw_Texture*)&k_texdef%d },\n",
-                        g_tex_ids[i], g_tex_ids[i]);
+                        textures[i].id, textures[i].id);
             fprintf(g_out, "};\n\n");
         }
         fprintf(g_out,
@@ -924,6 +1431,9 @@ main(int argc, char** argv)
                 "const struct XmasBakedTexture* xmas_baked_textures(void)\n"
                 "{\n    return %s;\n}\n",
                 tex_n, tex_n > 0 ? "k_textures" : "NULL");
+
+        for( int i = 0; i < tex_n; i++ )
+            ToriDraw_TextureFree(textures[i].tex);
     }
 
     fclose(g_out);

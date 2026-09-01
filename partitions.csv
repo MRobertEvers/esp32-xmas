@@ -2,4 +2,20 @@
 nvs,      data, nvs,     0x9000,  0x6000,
 phy_init, data, phy,     0xf000,  0x1000,
 factory,  app,  factory, 0x10000, 0x280000,
-model,    data, spiffs,  0x290000,0x40000,
+# Two model slots, used as a pair.
+#
+# A download writes the slot that is NOT in use and only then records the swap,
+# so a transfer that fails -- a dropped connection, a truncated body, a bundle
+# whose hash does not match -- leaves the model currently on the panel intact.
+# One slot would mean erasing the working model in order to try for a new one,
+# and the failure would be a device showing nothing until someone reflashed it.
+#
+# 1 MB each, against a bundle of about 100 KB for the spirit tree. The headroom
+# is for textures: each is 128x128 ARGB, which is 64 KB, and a model may
+# reference several.
+#
+# Subtype 0x40 rather than spiffs: there is no filesystem here. The slot holds
+# one bundle, written from offset zero, and read by esp_partition_mmap -- see
+# main/model_store.c and main/xmb_format.h.
+mdl_a,    data, 0x40,    0x290000,0x100000,
+mdl_b,    data, 0x40,    0x390000,0x100000,

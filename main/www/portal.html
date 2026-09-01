@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<!-- viewport-fit=cover plus the safe-area insets below, or the form sits under
+     the notch and the home indicator on a modern iPhone. -->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Set up your display</title>
+<style>
+  :root { color-scheme: light dark; }
+  body {
+    font: 17px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    margin: 0;
+    padding: max(24px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-left))
+             max(24px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-right));
+    max-width: 32rem;
+  }
+  h1 { font-size: 1.4rem; margin: 0 0 .25em; }
+  p.sub { margin: 0 0 1.5em; opacity: .7; }
+  label { display: block; margin: 1.1em 0 .3em; font-weight: 600; }
+  /* 16px minimum, or iOS zooms the whole page in when a field is focused and
+     the user has to pinch back out to reach the button. */
+  input, select {
+    width: 100%; box-sizing: border-box; font-size: 16px;
+    padding: .7em .6em; border: 1px solid #8888; border-radius: 8px;
+    background: Field; color: FieldText;
+  }
+  small { display: block; margin-top: .4em; opacity: .65; }
+  button {
+    width: 100%; margin-top: 1.8em; padding: .9em; font-size: 17px; font-weight: 600;
+    border: 0; border-radius: 10px; background: #0a7; color: #fff;
+  }
+  button[disabled] { opacity: .6; }
+  .spin {
+    display: inline-block; width: 1em; height: 1em; vertical-align: -.15em;
+    margin-right: .5em; border: 2px solid #8886; border-top-color: #0a7;
+    border-radius: 50%; animation: spin 1s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<h1>Set up your display</h1>
+<p class="sub">Pick the Wi-Fi network the display should join.</p>
+
+<!--
+  ONE REQUEST, AND NO JAVASCRIPT AT ALL.
+
+  This page opens inside the iOS Captive Network Assistant: a cut-down WebView
+  that can be dismissed the moment the system decides the network is usable. It
+  used to fetch /api/scan and /api/status to fill itself in, and that scan took
+  the radio off the access point's channel -- so the phone dropped, the sheet
+  closed, reopened, reloaded, and scanned again. The device's network appeared
+  to be repeatedly dying, because it was.
+
+  The options below are substituted into this HTML by root_get in http_api.c,
+  from a scan taken before the access point existed. Nothing here fetches
+  anything, and setup completes with scripting disabled.
+-->
+<form method="post" action="/api/provision">
+  <label for="ssid">Network</label>
+  <select id="ssid" name="ssid">
+    <!--NETWORKS-->
+  </select>
+  <small>Strongest first, as the display heard them before starting its own network.</small>
+
+  <label for="ssid_other">Or type a name <span style="font-weight:400;opacity:.6">(hidden networks)</span></label>
+  <input id="ssid_other" name="ssid_other" autocapitalize="none" autocorrect="off"
+         autocomplete="off" placeholder="Leave blank to use the list above">
+
+  <label for="pass">Password</label>
+  <input id="pass" name="pass" type="password" autocapitalize="none" autocorrect="off"
+         autocomplete="current-password">
+  <!--
+    There is no way to have the phone supply this.
+    No browser exposes a Wi-Fi API, and no autocomplete token covers network
+    credentials -- the OS paths that CAN hand over a password (Apple's
+    device-to-device share, DPP, Matter) are all outside the browser sandbox,
+    which is the point: a captive portal is an untrusted page on an untrusted
+    network. So the best available is to tell people where their phone keeps
+    it, since most have never had to type it.
+  -->
+  <small>Forgotten it? On iPhone: Settings &rarr; Wi-Fi &rarr; &#9432; next to your
+     network &rarr; Password. On Android: Settings &rarr; Wi-Fi &rarr; your network
+     &rarr; Share. Then paste it here.</small>
+
+  <label for="server">Model server <span style="font-weight:400;opacity:.6">(optional)</span></label>
+  <input id="server" name="server" inputmode="url" autocapitalize="none" autocorrect="off"
+         placeholder="http://192.168.1.10:8080">
+  <small>Leave blank if your server announces itself &mdash; the display will find
+     it. You can set this later either way.</small>
+
+  <button id="go" type="submit">Join network</button>
+</form>
+
+<p id="working" hidden style="margin-top:1.2em;text-align:center">
+  <span class="spin" aria-hidden="true"></span>
+  Joining&hellip; the display restarts, so this page may close on its own.
+  That is normal.
+</p>
+
+<script>
+  /*
+    Feedback only. The form works with this script disabled -- which matters,
+    because it runs inside a WebView that can be dismissed at any moment.
+
+    Pressing the button used to look like it did nothing: the device answers,
+    then restarts a second later, and the access point serving this page goes
+    with it. Without a "working" state that is indistinguishable from a dead
+    button.
+  */
+  document.querySelector('form').addEventListener('submit', function () {
+    var b = document.getElementById('go');
+
+    b.textContent = 'Joining…';
+    document.getElementById('working').hidden = false;
+    /* Disabled a tick later: doing it inside the handler drops the button from
+       the submission in some browsers. */
+    setTimeout(function () { b.disabled = true; }, 0);
+  });
+</script>
+</body>
+</html>

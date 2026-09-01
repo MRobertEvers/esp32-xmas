@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Display</title>
+<style>
+  :root { color-scheme: light dark; }
+  body {
+    font: 17px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    margin: 0;
+    padding: max(24px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-left))
+             max(24px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-right));
+    max-width: 32rem;
+  }
+  h1 { font-size: 1.4rem; margin: 0 0 1em; }
+  section { border-top: 1px solid #8884; padding: 1.2em 0; }
+  h2 { font-size: 1rem; margin: 0 0 .8em; text-transform: uppercase;
+       letter-spacing: .05em; opacity: .6; }
+  dl { display: grid; grid-template-columns: auto 1fr; gap: .4em 1em; margin: 0; }
+  dt { opacity: .6; }
+  dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
+  label { display: block; margin: .9em 0 .3em; font-weight: 600; }
+  input[type=text], input[type=url] {
+    width: 100%; box-sizing: border-box; font-size: 16px;
+    padding: .7em .6em; border: 1px solid #8888; border-radius: 8px;
+    background: Field; color: FieldText;
+  }
+  input[type=range] { width: 100%; }
+  button {
+    margin-top: 1em; padding: .8em 1.2em; font-size: 16px; font-weight: 600;
+    border: 0; border-radius: 10px; background: #0a7; color: #fff;
+  }
+  button.danger { background: #c33; }
+  #saved { margin-left: .8em; opacity: 0; transition: opacity .2s; }
+  ul { list-style: none; padding: 0; margin: 0; }
+  #pad {
+    height: 8rem; border: 1px dashed #8886; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    opacity: .55; user-select: none; -webkit-user-select: none;
+    margin-bottom: .5em;
+  }
+  #pad.on { border-style: solid; border-color: #0a7; opacity: 1; }
+  li.self { opacity: .75; }
+  li { margin-bottom: .9em; }
+  li small { display: block; margin-top: .25em; opacity: .6; }
+  #saved.show { opacity: .7; }
+</style>
+</head>
+<body>
+<h1>Display</h1>
+
+<section>
+  <h2>Status</h2>
+  <dl>
+    <dt>Showing</dt><dd id="model">&hellip;</dd>
+    <dt>Network</dt><dd id="ssid">&hellip;</dd>
+    <dt>Address</dt><dd id="ip">&hellip;</dd>
+    <dt>Free memory</dt><dd id="heap">&hellip;</dd>
+  </dl>
+</section>
+
+<section>
+  <h2>Camera</h2>
+  <div id="pad" style="touch-action:none">Drag to turn &amp; tilt</div>
+  <label for="zoom">Distance</label>
+  <input id="zoom" type="range" min="30" max="250" step="2">
+  <label for="offy">Height</label>
+  <input id="offy" type="range" min="-120" max="120" step="2">
+  <p style="margin:1em 0 0">
+    <label style="display:inline;font-weight:400">
+      <input type="checkbox" id="spin" style="width:auto"> Turn by itself
+    </label>
+    <button id="reset" style="float:right;margin:0;padding:.5em 1em">Reset</button>
+  </p>
+</section>
+
+<section>
+  <h2>Models</h2>
+  <p id="models-note" style="opacity:.7;margin:0 0 .8em">Loading&hellip;</p>
+  <ul id="models"></ul>
+  <p id="busy" hidden><progress id="bar" max="100" value="0" style="width:100%"></progress>
+     <span id="busy-text"></span></p>
+</section>
+
+<section>
+  <h2>Displays on this network</h2>
+  <p id="peers-note" style="opacity:.7;margin:0 0 .8em">Looking&hellip;</p>
+  <ul id="peers"></ul>
+</section>
+
+<section>
+  <h2>Settings</h2>
+  <label for="server">Model server</label>
+  <input id="server" type="url" inputmode="url" autocapitalize="none" autocorrect="off"
+         placeholder="http://192.168.1.10:8080">
+
+  <label for="brightness">Brightness &mdash; <span id="bval"></span>%</label>
+  <input id="brightness" type="range" min="0" max="100" step="5">
+
+  <button id="save">Save</button><span id="saved">Saved</span>
+</section>
+
+<section>
+  <h2>Network</h2>
+  <p style="opacity:.7;margin:0 0 .5em">Forgetting the network restarts the display and
+     shows the setup code on screen again.</p>
+  <button class="danger" id="forget">Forget Wi-Fi</button>
+</section>
+
+<script>
+// Plain ES2017: no build step, no framework, and nothing here that an iPhone a
+// few versions back cannot run. The page is served from the device itself over
+// plain HTTP, so every request below is same-origin -- which is the only way it
+// could work at all, since Safari will not let an HTTPS page call this device.
+'use strict';
+
+var $ = function (id) { return document.getElementById(id); };
+
+var viewArena = 0;
+var selfHost = '';
+var selfInfo = null;
+
+function refresh() {
+  return fetch('/api/status')
+    .then(function (r) { return r.json(); })
+    .then(function (s) {
+      $('model').textContent = s.model || 'built-in';
+      $('ssid').textContent = s.ssid || 'not set';
+      $('ip').textContent = s.ip;
+      $('heap').textContent = Math.round(s.heap / 1024) + ' KB';
+      viewArena = s.view_arena || 0;
+      zoomDefault = s.zoom_default || 2000;
+      selfHost = s.host || '';
+      selfInfo = s;
+      if (!sending) {
+        pose = { yaw: s.yaw, pitch: s.pitch, zoom: s.zoom, offy: s.offy, spin: s.spin };
+        if (document.activeElement !== $('zoom') && document.activeElement !== $('offy')) {
+          poseToControls();
+        }
+      }
+      if (document.activeElement !== $('server')) { $('server').value = s.server || ''; }
+      $('brightness').value = s.brightness;
+      $('bval').textContent = s.brightness;
+    });
+}
+
+// The catalogue comes through the device, not straight from the model server.
+// This page is plain HTTP served by the device, so a direct fetch would be
+// cross-origin and would need the model server to send CORS headers -- and if
+// that server were HTTPS, Safari would block the whole page from talking to
+// the device at all. Proxying keeps every request here same-origin.
+function loadModels() {
+  return fetch('/api/catalog')
+    .then(function (r) { return r.json(); })
+    .then(function (cat) {
+      var list = $('models');
+      var models = cat.models || [];
+      list.innerHTML = '';
+
+      if (!models.length) {
+        $('models-note').textContent = cat.reason
+          ? 'No models: ' + cat.reason + '.'
+          : 'The model server has no models yet.';
+        return;
+      }
+
+      $('models-note').textContent = 'Tap a model to load it. The display restarts to switch.';
+
+      models.forEach(function (m) {
+        // The device tells us how much view memory it has and every model says
+        // what it needs, so one that cannot be drawn is never offered.
+        var fits = !viewArena || !m.view_bytes || m.view_bytes <= viewArena;
+        var li = document.createElement('li');
+        var btn = document.createElement('button');
+
+        btn.textContent = m.name;
+        btn.style.width = '100%';
+        btn.style.marginTop = '.5em';
+        btn.disabled = !fits;
+        if (!fits) { btn.style.background = '#8888'; }
+
+        btn.addEventListener('click', function () { pick(m); });
+
+        li.appendChild(btn);
+        li.appendChild(Object.assign(document.createElement('small'), {
+          textContent: fits
+            ? m.faces + ' faces, ' + m.frames + ' frames, ' + Math.round(m.size / 1024) + ' KB'
+            : 'too complex for this display (' + Math.round(m.view_bytes / 1024) + ' KB of '
+              + Math.round(viewArena / 1024) + ' KB)'
+        }));
+        list.appendChild(li);
+      });
+    })
+    .catch(function () {
+      $('models-note').textContent = 'Could not read the model list.';
+    });
+}
+
+// Discovery has to happen on the DEVICE, not here. No browser exposes mDNS --
+// there is no API to receive a Bonjour advertisement, only the operating
+// system's ability to resolve a .local name someone already knows. So each
+// display browses for the others and this page renders what it found.
+function loadPeers() {
+  return fetch('/api/peers')
+    .then(function (r) { return r.json(); })
+    .then(function (peers) {
+      var list = $('peers');
+      list.innerHTML = '';
+
+      // This display first, then the ones it found. The device does the
+      // browsing because no browser can receive an mDNS advertisement -- there
+      // is no API for it -- so the page renders what its display discovered.
+      var all = [{
+        host: selfHost,
+        ip: (selfInfo && selfInfo.ip) || '',
+        model: (selfInfo && selfInfo.model) || '',
+        self: true,
+        alias: !!(selfInfo && selfInfo.alias)
+      }].concat(peers);
+
+      $('peers-note').textContent = all.length === 1
+        ? 'Just this one. Others appear here by themselves.'
+        : all.length + ' displays. Tap one to control it.';
+
+      all.forEach(function (p) {
+        var li = document.createElement('li');
+        var label = document.createElement(p.self ? 'strong' : 'a');
+
+        if (p.self) {
+          li.className = 'self';
+        } else {
+          label.href = 'http://' + (p.ip || p.host + '.local') + '/';
+        }
+        label.textContent = p.host || 'this display';
+
+        li.appendChild(label);
+        li.appendChild(Object.assign(document.createElement('small'), {
+          textContent: (p.model || 'built-in')
+            + ' — ' + (p.ip || p.host + '.local')
+            + (p.self ? ' — you are here' : '')
+            + (p.alias ? ' — answers xmas.local' : '')
+        }));
+        list.appendChild(li);
+      });
+    })
+    .catch(function () {
+      $('peers-note').textContent = 'Could not look for other displays.';
+    });
+}
+
+function pick(m) {
+  fetch('/api/model', { method: 'POST', body: new URLSearchParams({ file: m.file }) })
+    .then(function (r) {
+      if (!r.ok) { throw new Error('rejected'); }
+      $('busy').hidden = false;
+      $('busy-text').textContent = 'Loading ' + m.name + '…';
+      watch();
+    })
+    .catch(function () { $('models-note').textContent = 'The display would not take that.'; });
+}
+
+// Polling rather than an EventSource: the device has seven sockets to share
+// with everything Safari opens speculatively, and a held-open stream is one it
+// cannot spare. The device restarts on success, so the fetch failing IS the
+// success signal -- there is nothing left to answer.
+function watch() {
+  fetch('/api/progress')
+    .then(function (r) { return r.json(); })
+    .then(function (p) {
+      if (p.state === 'failed') {
+        $('busy').hidden = true;
+        $('models-note').textContent = 'Failed: ' + (p.error || 'unknown error') + '.';
+        return;
+      }
+      if (p.total > 0) {
+        $('bar').value = Math.round(p.received * 100 / p.total);
+      }
+      $('busy-text').textContent = p.state === 'verifying'
+        ? 'Checking…'
+        : Math.round(p.received / 1024) + ' KB';
+      setTimeout(watch, 500);
+    })
+    .catch(function () {
+      $('busy-text').textContent = 'Restarting with the new model…';
+      setTimeout(function () { location.reload(); }, 4000);
+    });
+}
+
+$('brightness').addEventListener('input', function () {
+  $('bval').textContent = this.value;
+});
+
+$('save').addEventListener('click', function () {
+  var body = new URLSearchParams({
+    server: $('server').value,
+    brightness: $('brightness').value
+  });
+  fetch('/api/config', { method: 'POST', body: body })
+    .then(refresh)
+    .then(function () {
+      $('saved').classList.add('show');
+      setTimeout(function () { $('saved').classList.remove('show'); }, 1500);
+    });
+});
+
+$('forget').addEventListener('click', function () {
+  if (!confirm('Forget the Wi-Fi network and restart?')) { return; }
+  fetch('/api/forget', { method: 'POST' });
+});
+
+refresh().then(loadModels).then(loadPeers);
+// Polling, not server-sent events: an EventSource holds a socket open for as
+// long as the page is on screen, and this server has seven of them to share
+// with everything Safari opens speculatively.
+setInterval(refresh, 5000);
+</script>
+</body>
+</html>

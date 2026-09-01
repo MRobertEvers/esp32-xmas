@@ -1,2 +1,10 @@
 dependencies:
   idf: ">=5.1"
+  # Bonjour, so the display has a NAME and not just an address.
+  #
+  # A web page cannot discover anything on a LAN -- browsers expose no mDNS,
+  # no raw sockets, no ARP -- so discovery has to run the other way round: the
+  # device advertises, and the phone resolves. iOS and macOS do that natively,
+  # which makes this the one platform where .local is the reliable path rather
+  # than the flaky one.
+  espressif/mdns: "^1.2"
