@@ -40,3 +40,8 @@ __pycache__/
 
 # Host bake_model tool build
 tools/bake_model/build/
+
+# KiCad
+*-backups/
+~*.lck
+fp-info-cache

@@ -1,0 +1,4 @@
+(fp_lib_table
+  (version 7)
+  (lib (name "xmas_orn")(type "KiCad")(uri "${KIPRJMOD}/xmas_orn.pretty")(options "")(descr "Project footprints (DC-002 barrel jack)"))
+)

@@ -25,7 +25,100 @@ Pins are defined at the top of [`main/main.c`](main/main.c).
 
 **No PSRAM.** It was needed once for toridraw's lookup tables; those are `const` in flash now, and so is the model. Everything left fits in internal DRAM.
 
+### Board (`board/xmas_orn`)
+
+KiCad 10 project.
+
+#### Revision history
+
+| Rev | Date | Module | Power | Outline | Notes |
+|-----|------|--------|-------|---------|-------|
+| 1 | June 2026 | ESP32-S3-MINI-1-N8 (8 MB flash, no PSRAM) | USB-C only | 27.5 × 39 mm | Ordered as PCBWay SMT quote W1016619ASI9; JLCPCB outputs in `production/` |
+| 2 | Sept 2026 | ESP32-S3-WROOM-1-N16R8 (16 MB flash, 8 MB octal PSRAM) | USB-C or 5 V barrel jack, Schottky OR-ed | 27.5 × 41.5 mm | Jack footprint unpopulated; fresh autoroute |
+
+#### Rev 2 changes
+
+- **Module:** ESP32-S3-WROOM-1-N16R8 (16 MB flash, 8 MB octal PSRAM) replaces the
+  ESP32-S3-MINI-1-N8. Same GPIOs as above, and none of them are the octal-PSRAM
+  pins (35/36/37), so `main.c` is unchanged. The firmware still does not *need*
+  PSRAM; `sdkconfig.defaults` keeps the 8 MB flash size so it also boots on rev 1.
+  Build with the `sdkconfig.rev2.defaults` overlay for rev 2 boards (see below).
+- **Board outline** grew from 27.5 × 39 mm to 27.5 × 41.5 mm; the four mounting
+  holes did not move. The module's antenna end overhangs the bottom edge, as the
+  MINI-1's did.
+- **Power inputs are OR-ed.** USB-C VBUS feeds `VIN` through D3 and the DC jack
+  through D4 (B5819W Schottky, SOD-123), so USB and the jack can both be plugged in
+  without back-feeding each other. `VIN` goes to the TLV75733 3.3 V LDO as before.
+- **J2, DC barrel jack (DC-002, 3.5 × 1.3 mm), not populated.** Footprint and
+  3D model live in the project library `xmas_orn.pretty` / `xmas_orn.3dshapes`.
+  The jack must be fed **5 V DC** (the LDO's absolute maximum input is 5.5 V);
+  the silkscreen says so next to the opening. Pin 1 is the centre pin (`VJACK`),
+  pin 2 the sleeve (GND), pin 3 the unused switch contact.
+- Copper keep-out rings around the mounting holes; minimum drill lowered to
+  0.2 mm for the WROOM-1 thermal vias (within JLCPCB capability).
+
+The routing is a fresh autoroute (Freerouting) that passes DRC with the project
+rules, not a hand layout.
+
+Outputs: `board/xmas_orn/docs/` holds the schematic and layer PDFs;
+`board/xmas_orn/production/rev2/` holds the JLCPCB gerber/drill zip, BOM and
+placement file, exported with `kicad-cli` (J2 excluded as DNP). The placement
+rotations are KiCad's raw angles, not the per-package corrections the
+Fabrication Toolkit plugin applies, so check the part orientation in JLCPCB's
+placement preview before confirming. The files directly under `production/` are
+the rev 1 outputs.
+
+Firmware for rev 2: `sdkconfig.rev2.defaults` overlays the 16 MB flash size and
+enables the octal PSRAM. The base defaults still build a firmware that runs on
+both revisions.
+
+#### Parts on hand for rev 2
+
+The rev 2 part choices follow what was actually bought (from the order emails,
+all AliExpress unless noted):
+
+| Part | Qty | Order | Ordered | Used as |
+|------|-----|-------|---------|---------|
+| ESP32-S3 WROOM-1 family module, N16R8 | 5 | 8212428463925361 | 2026-06-15 | **U1.** Bare module, 16 MB flash + 8 MB PSRAM. The listing photo shows the WROOM-1 shield can; if these turn out to be the 1U (IPEX) variant the same pads apply, only the antenna overhang is unused. |
+| DC-002 DC power jack, 3.5 × 1.3 mm, 3-pin | 20 | 8212428463985361 (shipped in package 8212428463965361) | 2026-06-15 | **J2**, not populated by default. Footprint from LCSC C381119 (XKB DC-002-2.0A-1.3); pin 1 centre, 2 sleeve, 3 switch. |
+| ESP32-S3-MINI-1-N4R2 | 4 | 8211751284255361 | 2026-06-17 | Not used. Drop-in for the rev 1 MINI-1 footprint (4 MB flash + 2 MB PSRAM) if a rev 1 board is respun instead. |
+| ESP32-S3 1.69" touch-screen dev boards | 2 | 8211746880775361 | 2026-06-17 | Not used; dev boards, not modules. |
+| ESP-32S (classic ESP32) module set | 1 | 8212349322565361 | 2026-06-17 | Not used; wrong chip family. |
+| AYWHP ESP32-S3 dev boards with WROOM-1-N16R8 | 3 | Amazon 114-8171301-3841008 | 2026-06-04 | Not used; dev boards. Handy for bringing up the N16R8 firmware config before rev 2 boards arrive. |
+| 3.3 V / 5 V / 12 V power supply module | 1 | 8212428463975361 (same package) | 2026-06-15 | Not on the board. |
+
+#### Sourcing the rest
+
+Everything new on rev 2 now carries an `LCSC Part #` field in the schematic and
+board so an assembler can pick it up directly:
+
+| Ref | Part | LCSC / JLCPCB | Status |
+|-----|------|---------------|--------|
+| U1 | ESP32-S3-WROOM-1-N16R8 | [C2913202](https://www.lcsc.com/product-detail/C2913202.html) ([DigiKey 16162642](https://www.digikey.com/en/products/detail/espressif-systems/ESP32-S3-WROOM-1-N16R8/16162642)) | 5 on hand |
+| J2 | DC-002 jack (XKB DC-002-2.0A-1.3) | [C381119](https://www.lcsc.com/product-detail/C381119.html) | 20 on hand; not populated |
+| D3, D4 | B5819W SL, 1 A / 40 V Schottky, SOD-123 | [C8598](https://jlcpcb.com/partdetail/9093-B5819WSL/C8598), a JLCPCB *basic* part | **Not on hand.** Needs 2 per board. |
+
+B5819W was not in any order. It is sourced from JLCPCB's parts library as
+[C8598](https://jlcpcb.com/partdetail/9093-B5819WSL/C8598) (Jiangsu Changjing
+B5819W SL), a *basic* library part, so it is placed at assembly with no feeder
+fee and nothing needs to be bought separately.
+
+Nothing else on the rev 2 BOM changed from rev 1, so the rev 1 part numbers in
+`production/JLCPCB_xmas_orn_bom.csv` still apply to those references.
+
 ---
+
+### Power hub (`board/xmas_hub`)
+
+A second KiCad 10 project: the base-of-tree distribution board for the rev 2
+jack. A 12 V / 3 A barrel supply goes in; four independently regulated and
+fused **5 V / 3 A arms** come out on screw terminals, each feeding a short
+cluster of ornaments through their DC-002 jacks. One TPS54302 buck and one PTC
+per arm, so a fault on one arm leaves the other three running — the "star"
+topology without a buck on every ornament. Design notes, BOM with LCSC numbers,
+cable guidance and the generator scripts are in
+[`board/xmas_hub/README.md`](board/xmas_hub/README.md); JLCPCB outputs in
+`board/xmas_hub/production/`.
 
 ## Prerequisites
 

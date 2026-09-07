@@ -1,0 +1,2373 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<export version="E">
+  <design>
+    <source>/Users/matthewevers/Documents/git_repos/esp32-xmas/board/xmas_hub/xmas_hub.kicad_sch</source>
+    <date>2026-09-06T21:45:41</date>
+    <tool>Eeschema 10.0.6</tool>
+    <sheet number="1" name="/" tstamps="/">
+      <title_block>
+        <title>xmas_hub - 12 V to 4 x 5 V star power hub</title>
+        <company>esp32-xmas</company>
+        <rev>1</rev>
+        <date/>
+        <source>xmas_hub.kicad_sch</source>
+        <comment number="1" value="Feeds up to 4 arms of xmas_orn ornaments; one TPS54302 buck and one PTC per arm"/>
+        <comment number="2" value=""/>
+        <comment number="3" value=""/>
+        <comment number="4" value=""/>
+        <comment number="5" value=""/>
+        <comment number="6" value=""/>
+        <comment number="7" value=""/>
+        <comment number="8" value=""/>
+        <comment number="9" value=""/>
+      </title_block>
+    </sheet>
+  </design>
+  <components>
+    <comp ref="C1">
+      <value>100uF 25V</value>
+      <footprint>Capacitor_THT:CP_Radial_D6.3mm_P2.50mm</footprint>
+      <description>Electrolytic bulk capacitor 100 uF 25 V 105C, 6.3 x 11 mm radial, 2.5 mm pitch</description>
+      <fields>
+        <field name="MPN">GR107V025E11RR0VH4FP0</field>
+        <field name="LCSC Part #">C44601</field>
+        <field name="Footprint">Capacitor_THT:CP_Radial_D6.3mm_P2.50mm</field>
+        <field name="Datasheet"/>
+        <field name="Description">Electrolytic bulk capacitor 100 uF 25 V 105C, 6.3 x 11 mm radial, 2.5 mm pitch</field>
+      </fields>
+      <libsource lib="Device" part="C_Polarized" description="Polarized capacitor"/>
+      <property name="MPN" value="GR107V025E11RR0VH4FP0"/>
+      <property name="LCSC Part #" value="C44601"/>
+      <property name="Sheetname" value="xmas_hub"/>
+      <property name="Sheetfile" value="xmas_hub.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="CP_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>80d034c9-f331-5666-bdd5-071ca360e2bc</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="C11">
+      <value>10uF 25V</value>
+      <footprint>Capacitor_SMD:C_1206_3216Metric</footprint>
+      <description>Input decoupling, X7R 25 V 1206</description>
+      <fields>
+        <field name="MPN">CL31B106KAHNNNE</field>
+        <field name="LCSC Part #">C14860</field>
+        <field name="Footprint">Capacitor_SMD:C_1206_3216Metric</field>
+        <field name="Datasheet"/>
+        <field name="Description">Input decoupling, X7R 25 V 1206</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MPN" value="CL31B106KAHNNNE"/>
+      <property name="LCSC Part #" value="C14860"/>
+      <property name="Sheetname" value="xmas_hub"/>
+      <property name="Sheetfile" value="xmas_hub.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>4d75685a-4c5f-55f9-870f-34d25d34b68c</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="C12">
+      <value>100nF</value>
+      <footprint>Capacitor_SMD:C_0603_1608Metric</footprint>
+      <description>Bootstrap capacitor, X7R 50 V</description>
+      <fields>
+        <field name="MPN">CL10B104KB8NNNC</field>
+        <field name="LCSC Part #">C1591</field>
+        <field name="Footprint">Capacitor_SMD:C_0603_1608Metric</field>
+        <field name="Datasheet"/>
+        <field name="Description">Bootstrap capacitor, X7R 50 V</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MPN" value="CL10B104KB8NNNC"/>
+      <property name="LCSC Part #" value="C1591"/>
+      <property name="Sheetname" value="xmas_hub"/>
+      <property name="Sheetfile" value="xmas_hub.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>419fd7cc-3e2c-50c4-b0f2-ee59bfc74e3d</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="C13">
+      <value>22uF 10V</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <description>Output capacitor, X5R 10 V 0805</description>
+      <fields>
+        <field name="MPN">CL21A226MPQNNNE</field>
+        <field name="LCSC Part #">C29277</field>
+        <field name="Footprint">Capacitor_SMD:C_0805_2012Metric</field>
+        <field name="Datasheet"/>
+        <field name="Description">Output capacitor, X5R 10 V 0805</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MPN" value="CL21A226MPQNNNE"/>
+      <property name="LCSC Part #" value="C29277"/>
+      <property name="Sheetname" value="xmas_hub"/>
+      <property name="Sheetfile" value="xmas_hub.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>f702b0f3-6fbe-59ea-bbe4-7fd91b707e90</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="C14">
+      <value>22uF 10V</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <description>Output capacitor, X5R 10 V 0805</description>
+      <fields>
+        <field name="MPN">CL21A226MPQNNNE</field>
+        <field name="LCSC Part #">C29277</field>
+        <field name="Footprint">Capacitor_SMD:C_0805_2012Metric</field>
+        <field name="Datasheet"/>
+        <field name="Description">Output capacitor, X5R 10 V 0805</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MPN" value="CL21A226MPQNNNE"/>
+      <property name="LCSC Part #" value="C29277"/>
+      <property name="Sheetname" value="xmas_hub"/>
+      <property name="Sheetfile" value="xmas_hub.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>fd5e74ec-9f3b-5ca7-970a-c1206717679b</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="C15">
+      <value>75pF</value>
+      <footprint>Capacitor_SMD:C_0603_1608Metric</footprint>
+      <description>Feed-forward capacitor across the top FB resistor, C0G</description>
+      <fields>
+        <field name="MPN">CC0603JRNPO9BN750</field>
+        <field name="LCSC Part #">C282074</field>
+        <field name="Footprint">Capacitor_SMD:C_0603_1608Metric</field>
+        <field name="Datasheet"/>
+        <field name="Description">Feed-forward capacitor across the top FB resistor, C0G</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MPN" value="CC0603JRNPO9BN750"/>
+      <property name="LCSC Part #" value="C282074"/>
+      <property name="Sheetname" value="xmas_hub"/>
+      <property name="Sheetfile" value="xmas_hub.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>6c1dcbb8-96f1-5f75-b608-ce1c6efc87b9</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="C21">
+      <value>10uF 25V</value>
+      <footprint>Capacitor_SMD:C_1206_3216Metric</footprint>
+      <description>Input decoupling, X7R 25 V 1206</description>
+      <fields>
+        <field name="MPN">CL31B106KAHNNNE</field>
+        <field name="LCSC Part #">C14860</field>
+        <field name="Footprint">Capacitor_SMD:C_1206_3216Metric</field>
+        <field name="Datasheet"/>
+        <field name="Description">Input decoupling, X7R 25 V 1206</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MPN" value="CL31B106KAHNNNE"/>
+      <property name="LCSC Part #" value="C14860"/>
+      <property name="Sheetname" value="xmas_hub"/>
+      <property name="Sheetfile" value="xmas_hub.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>7fcc844c-edfd-5157-a155-979de546e0ae</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="C22">
+      <value>100nF</value>
+      <footprint>Capacitor_SMD:C_0603_1608Metric</footprint>
+      <description>Bootstrap capacitor, X7R 50 V</description>
+      <fields>
+        <field name="MPN">CL10B104KB8NNNC</field>
+        <field name="LCSC Part #">C1591</field>
+        <field name="Footprint">Capacitor_SMD:C_0603_1608Metric</field>
+        <field name="Datasheet"/>
+        <field name="Description">Bootstrap capacitor, X7R 50 V</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MPN" value="CL10B104KB8NNNC"/>
+      <property name="LCSC Part #" value="C1591"/>
+      <property name="Sheetname" value="xmas_hub"/>
+      <property name="Sheetfile" value="xmas_hub.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>b993d2c1-6af1-5507-a9d5-621e3fb55973</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="C23">
+      <value>22uF 10V</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <description>Output capacitor, X5R 10 V 0805</description>
+      <fields>
+        <field name="MPN">CL21A226MPQNNNE</field>
+        <field name="LCSC Part #">C29277</field>
+        <field name="Footprint">Capacitor_SMD:C_0805_2012Metric</field>
+        <field name="Datasheet"/>
+        <field name="Description">Output capacitor, X5R 10 V 0805</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MPN" value="CL21A226MPQNNNE"/>
+      <property name="LCSC Part #" value="C29277"/>
+      <property name="Sheetname" value="xmas_hub"/>
+      <property name="Sheetfile" value="xmas_hub.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>06d7da57-577f-5c87-8837-ba004d9cf5f8</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="C24">
+      <value>22uF 10V</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <description>Output capacitor, X5R 10 V 0805</description>
+      <fields>
+        <field name="MPN">CL21A226MPQNNNE</field>
+        <field name="LCSC Part #">C29277</field>
+        <field name="Footprint">Capacitor_SMD:C_0805_2012Metric</field>
+        <field name="Datasheet"/>
+        <field name="Description">Output capacitor, X5R 10 V 0805</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MPN" value="CL21A226MPQNNNE"/>
+      <property name="LCSC Part #" value="C29277"/>
+      <property name="Sheetname" value="xmas_hub"/>
+      <property name="Sheetfile" value="xmas_hub.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>b0d664d0-507b-5b50-8978-815c1d11c541</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="C25">
+      <value>75pF</value>
+      <footprint>Capacitor_SMD:C_0603_1608Metric</footprint>
+      <description>Feed-forward capacitor across the top FB resistor, C0G</description>
+      <fields>
+        <field name="MPN">CC0603JRNPO9BN750</field>
+        <field name="LCSC Part #">C282074</field>
+        <field name="Footprint">Capacitor_SMD:C_0603_1608Metric</field>
+        <field name="Datasheet"/>
+        <field name="Description">Feed-forward capacitor across the top FB resistor, C0G</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MPN" value="CC0603JRNPO9BN750"/>
+      <property name="LCSC Part #" value="C282074"/>
+      <property name="Sheetname" value="xmas_hub"/>
+      <property name="Sheetfile" value="xmas_hub.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>fbec2448-3998-57b8-94b8-e54a4e18961a</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="C31">
+      <value>10uF 25V</value>
+      <footprint>Capacitor_SMD:C_1206_3216Metric</footprint>
+      <description>Input decoupling, X7R 25 V 1206</description>
+      <fields>
+        <field name="MPN">CL31B106KAHNNNE</field>
+        <field name="LCSC Part #">C14860</field>
+        <field name="Footprint">Capacitor_SMD:C_1206_3216Metric</field>
+        <field name="Datasheet"/>
+        <field name="Description">Input decoupling, X7R 25 V 1206</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MPN" value="CL31B106KAHNNNE"/>
+      <property name="LCSC Part #" value="C14860"/>
+      <property name="Sheetname" value="xmas_hub"/>
+      <property name="Sheetfile" value="xmas_hub.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>e3d58c06-0339-5aea-8ed0-b8e6906b17cc</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="C32">
+      <value>100nF</value>
+      <footprint>Capacitor_SMD:C_0603_1608Metric</footprint>
+      <description>Bootstrap capacitor, X7R 50 V</description>
+      <fields>
+        <field name="MPN">CL10B104KB8NNNC</field>
+        <field name="LCSC Part #">C1591</field>
+        <field name="Footprint">Capacitor_SMD:C_0603_1608Metric</field>
+        <field name="Datasheet"/>
+        <field name="Description">Bootstrap capacitor, X7R 50 V</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MPN" value="CL10B104KB8NNNC"/>
+      <property name="LCSC Part #" value="C1591"/>
+      <property name="Sheetname" value="xmas_hub"/>
+      <property name="Sheetfile" value="xmas_hub.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>591f5d98-38ce-5733-a3eb-937770e4acfa</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="C33">
+      <value>22uF 10V</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <description>Output capacitor, X5R 10 V 0805</description>
+      <fields>
+        <field name="MPN">CL21A226MPQNNNE</field>
+        <field name="LCSC Part #">C29277</field>
+        <field name="Footprint">Capacitor_SMD:C_0805_2012Metric</field>
+        <field name="Datasheet"/>
+        <field name="Description">Output capacitor, X5R 10 V 0805</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MPN" value="CL21A226MPQNNNE"/>
+      <property name="LCSC Part #" value="C29277"/>
+      <property name="Sheetname" value="xmas_hub"/>
+      <property name="Sheetfile" value="xmas_hub.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>77b2f007-ac4c-57ec-888b-efeb0d72f1c5</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="C34">
+      <value>22uF 10V</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <description>Output capacitor, X5R 10 V 0805</description>
+      <fields>
+        <field name="MPN">CL21A226MPQNNNE</field>
+        <field name="LCSC Part #">C29277</field>
+        <field name="Footprint">Capacitor_SMD:C_0805_2012Metric</field>
+        <field name="Datasheet"/>
+        <field name="Description">Output capacitor, X5R 10 V 0805</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MPN" value="CL21A226MPQNNNE"/>
+      <property name="LCSC Part #" value="C29277"/>
+      <property name="Sheetname" value="xmas_hub"/>
+      <property name="Sheetfile" value="xmas_hub.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>5112bb70-4748-532c-9dcc-120c13506624</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="C35">
+      <value>75pF</value>
+      <footprint>Capacitor_SMD:C_0603_1608Metric</footprint>
+      <description>Feed-forward capacitor across the top FB resistor, C0G</description>
+      <fields>
+        <field name="MPN">CC0603JRNPO9BN750</field>
+        <field name="LCSC Part #">C282074</field>
+        <field name="Footprint">Capacitor_SMD:C_0603_1608Metric</field>
+        <field name="Datasheet"/>
+        <field name="Description">Feed-forward capacitor across the top FB resistor, C0G</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MPN" value="CC0603JRNPO9BN750"/>
+      <property name="LCSC Part #" value="C282074"/>
+      <property name="Sheetname" value="xmas_hub"/>
+      <property name="Sheetfile" value="xmas_hub.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>a2dbed9d-99d2-5de4-b8dd-6c51d8eebf8e</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="C41">
+      <value>10uF 25V</value>
+      <footprint>Capacitor_SMD:C_1206_3216Metric</footprint>
+      <description>Input decoupling, X7R 25 V 1206</description>
+      <fields>
+        <field name="MPN">CL31B106KAHNNNE</field>
+        <field name="LCSC Part #">C14860</field>
+        <field name="Footprint">Capacitor_SMD:C_1206_3216Metric</field>
+        <field name="Datasheet"/>
+        <field name="Description">Input decoupling, X7R 25 V 1206</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MPN" value="CL31B106KAHNNNE"/>
+      <property name="LCSC Part #" value="C14860"/>
+      <property name="Sheetname" value="xmas_hub"/>
+      <property name="Sheetfile" value="xmas_hub.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>a45cfa44-548d-577c-8d7c-c3b3d2330b3c</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="C42">
+      <value>100nF</value>
+      <footprint>Capacitor_SMD:C_0603_1608Metric</footprint>
+      <description>Bootstrap capacitor, X7R 50 V</description>
+      <fields>
+        <field name="MPN">CL10B104KB8NNNC</field>
+        <field name="LCSC Part #">C1591</field>
+        <field name="Footprint">Capacitor_SMD:C_0603_1608Metric</field>
+        <field name="Datasheet"/>
+        <field name="Description">Bootstrap capacitor, X7R 50 V</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MPN" value="CL10B104KB8NNNC"/>
+      <property name="LCSC Part #" value="C1591"/>
+      <property name="Sheetname" value="xmas_hub"/>
+      <property name="Sheetfile" value="xmas_hub.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>3756e223-1649-5239-8f44-fdf2190d0315</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="C43">
+      <value>22uF 10V</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <description>Output capacitor, X5R 10 V 0805</description>
+      <fields>
+        <field name="MPN">CL21A226MPQNNNE</field>
+        <field name="LCSC Part #">C29277</field>
+        <field name="Footprint">Capacitor_SMD:C_0805_2012Metric</field>
+        <field name="Datasheet"/>
+        <field name="Description">Output capacitor, X5R 10 V 0805</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MPN" value="CL21A226MPQNNNE"/>
+      <property name="LCSC Part #" value="C29277"/>
+      <property name="Sheetname" value="xmas_hub"/>
+      <property name="Sheetfile" value="xmas_hub.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>4fb9687b-842e-5770-85c3-1114073e08c8</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="C44">
+      <value>22uF 10V</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <description>Output capacitor, X5R 10 V 0805</description>
+      <fields>
+        <field name="MPN">CL21A226MPQNNNE</field>
+        <field name="LCSC Part #">C29277</field>
+        <field name="Footprint">Capacitor_SMD:C_0805_2012Metric</field>
+        <field name="Datasheet"/>
+        <field name="Description">Output capacitor, X5R 10 V 0805</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MPN" value="CL21A226MPQNNNE"/>
+      <property name="LCSC Part #" value="C29277"/>
+      <property name="Sheetname" value="xmas_hub"/>
+      <property name="Sheetfile" value="xmas_hub.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>467665de-c0cb-5c82-8d24-d2c19f1c14de</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="C45">
+      <value>75pF</value>
+      <footprint>Capacitor_SMD:C_0603_1608Metric</footprint>
+      <description>Feed-forward capacitor across the top FB resistor, C0G</description>
+      <fields>
+        <field name="MPN">CC0603JRNPO9BN750</field>
+        <field name="LCSC Part #">C282074</field>
+        <field name="Footprint">Capacitor_SMD:C_0603_1608Metric</field>
+        <field name="Datasheet"/>
+        <field name="Description">Feed-forward capacitor across the top FB resistor, C0G</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MPN" value="CC0603JRNPO9BN750"/>
+      <property name="LCSC Part #" value="C282074"/>
+      <property name="Sheetname" value="xmas_hub"/>
+      <property name="Sheetfile" value="xmas_hub.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>1907f67f-bb77-517d-940e-1bb76a2010aa</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="D1">
+      <value>SMAJ15A</value>
+      <footprint>Diode_SMD:D_SMA</footprint>
+      <description>TVS diode 15 V standoff, 400 W, SMA (unidirectional); cathode to +12V</description>
+      <fields>
+        <field name="MPN">SMAJ15A</field>
+        <field name="LCSC Part #">C148216</field>
+        <field name="Footprint">Diode_SMD:D_SMA</field>
+        <field name="Datasheet"/>
+        <field name="Description">TVS diode 15 V standoff, 400 W, SMA (unidirectional); cathode to +12V</field>
+      </fields>
+      <libsource lib="Device" part="D_Zener" description="Zener diode"/>
+      <property name="MPN" value="SMAJ15A"/>
+      <property name="LCSC Part #" value="C148216"/>
+      <property name="Sheetname" value="xmas_hub"/>
+      <property name="Sheetfile" value="xmas_hub.kicad_sch"/>
+      <property name="ki_keywords" value="diode"/>
+      <property name="ki_fp_filters" value="TO-???* *_Diode_* *SingleDiode* D_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>5e2f8903-9a62-5295-b209-b18ce6d1a399</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="D2">
+      <value>LED red</value>
+      <footprint>LED_SMD:LED_0603_1608Metric</footprint>
+      <description>12 V present indicator, red 0603</description>
+      <fields>
+        <field name="MPN">KT-0603R</field>
+        <field name="LCSC Part #">C2286</field>
+        <field name="Footprint">LED_SMD:LED_0603_1608Metric</field>
+        <field name="Datasheet"/>
+        <field name="Description">12 V present indicator, red 0603</field>
+      </fields>
+      <libsource lib="Device" part="LED" description="Light emitting diode"/>
+      <property name="MPN" value="KT-0603R"/>
+      <property name="LCSC Part #" value="C2286"/>
+      <property name="Sheetname" value="xmas_hub"/>
+      <property name="Sheetfile" value="xmas_hub.kicad_sch"/>
+      <property name="ki_keywords" value="LED diode"/>
+      <property name="ki_fp_filters" value="LED* LED_SMD:* LED_THT:*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>3a8b15cd-60ac-5676-ada8-5f253fa43a52</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="D11">
+      <value>LED green</value>
+      <footprint>LED_SMD:LED_0603_1608Metric</footprint>
+      <description>Arm live indicator, green 0603</description>
+      <fields>
+        <field name="MPN">KT-0603G</field>
+        <field name="LCSC Part #">C12624</field>
+        <field name="Footprint">LED_SMD:LED_0603_1608Metric</field>
+        <field name="Datasheet"/>
+        <field name="Description">Arm live indicator, green 0603</field>
+      </fields>
+      <libsource lib="Device" part="LED" description="Light emitting diode"/>
+      <property name="MPN" value="KT-0603G"/>
+      <property name="LCSC Part #" value="C12624"/>
+      <property name="Sheetname" value="xmas_hub"/>
+      <property name="Sheetfile" value="xmas_hub.kicad_sch"/>
+      <property name="ki_keywords" value="LED diode"/>
+      <property name="ki_fp_filters" value="LED* LED_SMD:* LED_THT:*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>cf56bc38-0ad2-5520-a779-4e81bb3e7050</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="D21">
+      <value>LED green</value>
+      <footprint>LED_SMD:LED_0603_1608Metric</footprint>
+      <description>Arm live indicator, green 0603</description>
+      <fields>
+        <field name="MPN">KT-0603G</field>
+        <field name="LCSC Part #">C12624</field>
+        <field name="Footprint">LED_SMD:LED_0603_1608Metric</field>
+        <field name="Datasheet"/>
+        <field name="Description">Arm live indicator, green 0603</field>
+      </fields>
+      <libsource lib="Device" part="LED" description="Light emitting diode"/>
+      <property name="MPN" value="KT-0603G"/>
+      <property name="LCSC Part #" value="C12624"/>
+      <property name="Sheetname" value="xmas_hub"/>
+      <property name="Sheetfile" value="xmas_hub.kicad_sch"/>
+      <property name="ki_keywords" value="LED diode"/>
+      <property name="ki_fp_filters" value="LED* LED_SMD:* LED_THT:*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>6482efe8-0f60-5502-9847-5def7ea24151</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="D31">
+      <value>LED green</value>
+      <footprint>LED_SMD:LED_0603_1608Metric</footprint>
+      <description>Arm live indicator, green 0603</description>
+      <fields>
+        <field name="MPN">KT-0603G</field>
+        <field name="LCSC Part #">C12624</field>
+        <field name="Footprint">LED_SMD:LED_0603_1608Metric</field>
+        <field name="Datasheet"/>
+        <field name="Description">Arm live indicator, green 0603</field>
+      </fields>
+      <libsource lib="Device" part="LED" description="Light emitting diode"/>
+      <property name="MPN" value="KT-0603G"/>
+      <property name="LCSC Part #" value="C12624"/>
+      <property name="Sheetname" value="xmas_hub"/>
+      <property name="Sheetfile" value="xmas_hub.kicad_sch"/>
+      <property name="ki_keywords" value="LED diode"/>
+      <property name="ki_fp_filters" value="LED* LED_SMD:* LED_THT:*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>9f067ecd-ccf9-5987-9055-4571c66bb435</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="D41">
+      <value>LED green</value>
+      <footprint>LED_SMD:LED_0603_1608Metric</footprint>
+      <description>Arm live indicator, green 0603</description>
+      <fields>
+        <field name="MPN">KT-0603G</field>
+        <field name="LCSC Part #">C12624</field>
+        <field name="Footprint">LED_SMD:LED_0603_1608Metric</field>
+        <field name="Datasheet"/>
+        <field name="Description">Arm live indicator, green 0603</field>
+      </fields>
+      <libsource lib="Device" part="LED" description="Light emitting diode"/>
+      <property name="MPN" value="KT-0603G"/>
+      <property name="LCSC Part #" value="C12624"/>
+      <property name="Sheetname" value="xmas_hub"/>
+      <property name="Sheetfile" value="xmas_hub.kicad_sch"/>
+      <property name="ki_keywords" value="LED diode"/>
+      <property name="ki_fp_filters" value="LED* LED_SMD:* LED_THT:*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>9cb5ab03-11b2-5714-af36-0bcf9f51526f</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="F1">
+      <value>5A PTC 16V</value>
+      <footprint>Fuse:Fuse_2920_7451Metric</footprint>
+      <description>Resettable PTC fuse, 5 A hold, 16 V, 2920</description>
+      <fields>
+        <field name="MPN">2920L500/16MR</field>
+        <field name="LCSC Part #">C207091</field>
+        <field name="Footprint">Fuse:Fuse_2920_7451Metric</field>
+        <field name="Datasheet"/>
+        <field name="Description">Resettable PTC fuse, 5 A hold, 16 V, 2920</field>
+      </fields>
+      <libsource lib="Device" part="Polyfuse" description="Resettable fuse, polymeric positive temperature coefficient"/>
+      <property name="MPN" value="2920L500/16MR"/>
+      <property name="LCSC Part #" value="C207091"/>
+      <property name="Sheetname" value="xmas_hub"/>
+      <property name="Sheetfile" value="xmas_hub.kicad_sch"/>
+      <property name="ki_keywords" value="resettable fuse PTC PPTC polyfuse polyswitch"/>
+      <property name="ki_fp_filters" value="*polyfuse* *PTC*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>e14c1943-d06e-510e-8212-218ab2cb07ca</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="F11">
+      <value>2.6A PTC</value>
+      <footprint>Fuse:Fuse_1812_4532Metric</footprint>
+      <description>Resettable PTC fuse 2.6 A hold, 16 V, 1812</description>
+      <fields>
+        <field name="MPN">SMD1812P260TF/16</field>
+        <field name="LCSC Part #">C438899</field>
+        <field name="Footprint">Fuse:Fuse_1812_4532Metric</field>
+        <field name="Datasheet"/>
+        <field name="Description">Resettable PTC fuse 2.6 A hold, 16 V, 1812</field>
+      </fields>
+      <libsource lib="Device" part="Polyfuse" description="Resettable fuse, polymeric positive temperature coefficient"/>
+      <property name="MPN" value="SMD1812P260TF/16"/>
+      <property name="LCSC Part #" value="C438899"/>
+      <property name="Sheetname" value="xmas_hub"/>
+      <property name="Sheetfile" value="xmas_hub.kicad_sch"/>
+      <property name="ki_keywords" value="resettable fuse PTC PPTC polyfuse polyswitch"/>
+      <property name="ki_fp_filters" value="*polyfuse* *PTC*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>38acfedd-0ad1-5ef0-afe1-224a36e22917</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="F21">
+      <value>2.6A PTC</value>
+      <footprint>Fuse:Fuse_1812_4532Metric</footprint>
+      <description>Resettable PTC fuse 2.6 A hold, 16 V, 1812</description>
+      <fields>
+        <field name="MPN">SMD1812P260TF/16</field>
+        <field name="LCSC Part #">C438899</field>
+        <field name="Footprint">Fuse:Fuse_1812_4532Metric</field>
+        <field name="Datasheet"/>
+        <field name="Description">Resettable PTC fuse 2.6 A hold, 16 V, 1812</field>
+      </fields>
+      <libsource lib="Device" part="Polyfuse" description="Resettable fuse, polymeric positive temperature coefficient"/>
+      <property name="MPN" value="SMD1812P260TF/16"/>
+      <property name="LCSC Part #" value="C438899"/>
+      <property name="Sheetname" value="xmas_hub"/>
+      <property name="Sheetfile" value="xmas_hub.kicad_sch"/>
+      <property name="ki_keywords" value="resettable fuse PTC PPTC polyfuse polyswitch"/>
+      <property name="ki_fp_filters" value="*polyfuse* *PTC*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>e7a3b85d-6ccd-5cf8-a8a7-2aedc7cf61a0</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="F31">
+      <value>2.6A PTC</value>
+      <footprint>Fuse:Fuse_1812_4532Metric</footprint>
+      <description>Resettable PTC fuse 2.6 A hold, 16 V, 1812</description>
+      <fields>
+        <field name="MPN">SMD1812P260TF/16</field>
+        <field name="LCSC Part #">C438899</field>
+        <field name="Footprint">Fuse:Fuse_1812_4532Metric</field>
+        <field name="Datasheet"/>
+        <field name="Description">Resettable PTC fuse 2.6 A hold, 16 V, 1812</field>
+      </fields>
+      <libsource lib="Device" part="Polyfuse" description="Resettable fuse, polymeric positive temperature coefficient"/>
+      <property name="MPN" value="SMD1812P260TF/16"/>
+      <property name="LCSC Part #" value="C438899"/>
+      <property name="Sheetname" value="xmas_hub"/>
+      <property name="Sheetfile" value="xmas_hub.kicad_sch"/>
+      <property name="ki_keywords" value="resettable fuse PTC PPTC polyfuse polyswitch"/>
+      <property name="ki_fp_filters" value="*polyfuse* *PTC*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>ea5cf1e7-c380-530b-afdb-01d854a05963</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="F41">
+      <value>2.6A PTC</value>
+      <footprint>Fuse:Fuse_1812_4532Metric</footprint>
+      <description>Resettable PTC fuse 2.6 A hold, 16 V, 1812</description>
+      <fields>
+        <field name="MPN">SMD1812P260TF/16</field>
+        <field name="LCSC Part #">C438899</field>
+        <field name="Footprint">Fuse:Fuse_1812_4532Metric</field>
+        <field name="Datasheet"/>
+        <field name="Description">Resettable PTC fuse 2.6 A hold, 16 V, 1812</field>
+      </fields>
+      <libsource lib="Device" part="Polyfuse" description="Resettable fuse, polymeric positive temperature coefficient"/>
+      <property name="MPN" value="SMD1812P260TF/16"/>
+      <property name="LCSC Part #" value="C438899"/>
+      <property name="Sheetname" value="xmas_hub"/>
+      <property name="Sheetfile" value="xmas_hub.kicad_sch"/>
+      <property name="ki_keywords" value="resettable fuse PTC PPTC polyfuse polyswitch"/>
+      <property name="ki_fp_filters" value="*polyfuse* *PTC*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>53f16296-334b-5d87-bddb-4472f0edeee7</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="H1">
+      <value>M3</value>
+      <footprint>MountingHole:MountingHole_3.2mm_M3</footprint>
+      <description>Mounting hole M3</description>
+      <fields>
+        <field name="Footprint">MountingHole:MountingHole_3.2mm_M3</field>
+        <field name="Datasheet"/>
+        <field name="Description">Mounting hole M3</field>
+      </fields>
+      <libsource lib="Mechanical" part="MountingHole" description="Mounting Hole without connection"/>
+      <property name="Sheetname" value="xmas_hub"/>
+      <property name="Sheetfile" value="xmas_hub.kicad_sch"/>
+      <property name="exclude_from_bom"/>
+      <property name="ki_keywords" value="mounting hole"/>
+      <property name="ki_fp_filters" value="MountingHole*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>4fdead9d-e29c-5804-8453-1b5777ab8d82</tstamps>
+      <units>
+        <unit name="A">
+          <pins/>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="H2">
+      <value>M3</value>
+      <footprint>MountingHole:MountingHole_3.2mm_M3</footprint>
+      <description>Mounting hole M3</description>
+      <fields>
+        <field name="Footprint">MountingHole:MountingHole_3.2mm_M3</field>
+        <field name="Datasheet"/>
+        <field name="Description">Mounting hole M3</field>
+      </fields>
+      <libsource lib="Mechanical" part="MountingHole" description="Mounting Hole without connection"/>
+      <property name="Sheetname" value="xmas_hub"/>
+      <property name="Sheetfile" value="xmas_hub.kicad_sch"/>
+      <property name="exclude_from_bom"/>
+      <property name="ki_keywords" value="mounting hole"/>
+      <property name="ki_fp_filters" value="MountingHole*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>f3991ea0-2cbf-539e-b62f-a2bb661745e0</tstamps>
+      <units>
+        <unit name="A">
+          <pins/>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="H3">
+      <value>M3</value>
+      <footprint>MountingHole:MountingHole_3.2mm_M3</footprint>
+      <description>Mounting hole M3</description>
+      <fields>
+        <field name="Footprint">MountingHole:MountingHole_3.2mm_M3</field>
+        <field name="Datasheet"/>
+        <field name="Description">Mounting hole M3</field>
+      </fields>
+      <libsource lib="Mechanical" part="MountingHole" description="Mounting Hole without connection"/>
+      <property name="Sheetname" value="xmas_hub"/>
+      <property name="Sheetfile" value="xmas_hub.kicad_sch"/>
+      <property name="exclude_from_bom"/>
+      <property name="ki_keywords" value="mounting hole"/>
+      <property name="ki_fp_filters" value="MountingHole*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>a80ca79a-63ad-5a94-96f8-3b82146aa28d</tstamps>
+      <units>
+        <unit name="A">
+          <pins/>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="H4">
+      <value>M3</value>
+      <footprint>MountingHole:MountingHole_3.2mm_M3</footprint>
+      <description>Mounting hole M3</description>
+      <fields>
+        <field name="Footprint">MountingHole:MountingHole_3.2mm_M3</field>
+        <field name="Datasheet"/>
+        <field name="Description">Mounting hole M3</field>
+      </fields>
+      <libsource lib="Mechanical" part="MountingHole" description="Mounting Hole without connection"/>
+      <property name="Sheetname" value="xmas_hub"/>
+      <property name="Sheetfile" value="xmas_hub.kicad_sch"/>
+      <property name="exclude_from_bom"/>
+      <property name="ki_keywords" value="mounting hole"/>
+      <property name="ki_fp_filters" value="MountingHole*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>cb07a97e-3832-5099-9174-d298333efabb</tstamps>
+      <units>
+        <unit name="A">
+          <pins/>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="J1">
+      <value>DC-005 5.5x2.1mm</value>
+      <footprint>xmas_hub:DC-005_BarrelJack_5.5x2.1mm_Horizontal</footprint>
+      <datasheet>https://www.lcsc.com/datasheet/C16214.pdf</datasheet>
+      <description>DC barrel jack 5.5 x 2.1 mm, DC-005 style, centre positive; pin 1 centre, pin 2 sleeve, pin 3 switch (unused)</description>
+      <fields>
+        <field name="MPN">DC-005 (2.0 mm pin)</field>
+        <field name="LCSC Part #">C16214</field>
+        <field name="Footprint">xmas_hub:DC-005_BarrelJack_5.5x2.1mm_Horizontal</field>
+        <field name="Datasheet">https://www.lcsc.com/datasheet/C16214.pdf</field>
+        <field name="Description">DC barrel jack 5.5 x 2.1 mm, DC-005 style, centre positive; pin 1 centre, pin 2 sleeve, pin 3 switch (unused)</field>
+      </fields>
+      <libsource lib="Connector" part="Barrel_Jack" description="DC Barrel Jack"/>
+      <property name="MPN" value="DC-005 (2.0 mm pin)"/>
+      <property name="LCSC Part #" value="C16214"/>
+      <property name="Sheetname" value="xmas_hub"/>
+      <property name="Sheetfile" value="xmas_hub.kicad_sch"/>
+      <property name="ki_keywords" value="DC power barrel jack connector"/>
+      <property name="ki_fp_filters" value="BarrelJack*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>94883cd9-87f0-5816-8d4b-a228c8c32671</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="J2">
+      <value>ARM 1 5V</value>
+      <footprint>TerminalBlock_Phoenix:TerminalBlock_Phoenix_MKDS-1,5-2-5.08_1x02_P5.08mm_Horizontal</footprint>
+      <description>Screw terminal 2-pin 5.08 mm, 5 V arm 1 out: pin 1 = +5 V, pin 2 = GND</description>
+      <fields>
+        <field name="MPN">KF301-5.0-2P</field>
+        <field name="LCSC Part #">C474881</field>
+        <field name="Footprint">TerminalBlock_Phoenix:TerminalBlock_Phoenix_MKDS-1,5-2-5.08_1x02_P5.08mm_Horizontal</field>
+        <field name="Datasheet"/>
+        <field name="Description">Screw terminal 2-pin 5.08 mm, 5 V arm 1 out: pin 1 = +5 V, pin 2 = GND</field>
+      </fields>
+      <libsource lib="Connector" part="Screw_Terminal_01x02" description="Generic screw terminal, single row, 01x02, script generated (kicad-library-utils/schlib/autogen/connector/)"/>
+      <property name="MPN" value="KF301-5.0-2P"/>
+      <property name="LCSC Part #" value="C474881"/>
+      <property name="Sheetname" value="xmas_hub"/>
+      <property name="Sheetfile" value="xmas_hub.kicad_sch"/>
+      <property name="ki_keywords" value="screw terminal"/>
+      <property name="ki_fp_filters" value="TerminalBlock*:*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>388e56bb-7059-5386-a98e-1e06a2cc0845</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="J3">
+      <value>ARM 2 5V</value>
+      <footprint>TerminalBlock_Phoenix:TerminalBlock_Phoenix_MKDS-1,5-2-5.08_1x02_P5.08mm_Horizontal</footprint>
+      <description>Screw terminal 2-pin 5.08 mm, 5 V arm 2 out: pin 1 = +5 V, pin 2 = GND</description>
+      <fields>
+        <field name="MPN">KF301-5.0-2P</field>
+        <field name="LCSC Part #">C474881</field>
+        <field name="Footprint">TerminalBlock_Phoenix:TerminalBlock_Phoenix_MKDS-1,5-2-5.08_1x02_P5.08mm_Horizontal</field>
+        <field name="Datasheet"/>
+        <field name="Description">Screw terminal 2-pin 5.08 mm, 5 V arm 2 out: pin 1 = +5 V, pin 2 = GND</field>
+      </fields>
+      <libsource lib="Connector" part="Screw_Terminal_01x02" description="Generic screw terminal, single row, 01x02, script generated (kicad-library-utils/schlib/autogen/connector/)"/>
+      <property name="MPN" value="KF301-5.0-2P"/>
+      <property name="LCSC Part #" value="C474881"/>
+      <property name="Sheetname" value="xmas_hub"/>
+      <property name="Sheetfile" value="xmas_hub.kicad_sch"/>
+      <property name="ki_keywords" value="screw terminal"/>
+      <property name="ki_fp_filters" value="TerminalBlock*:*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>74c1b617-5161-5850-81b0-2affc9c9b23b</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="J4">
+      <value>ARM 3 5V</value>
+      <footprint>TerminalBlock_Phoenix:TerminalBlock_Phoenix_MKDS-1,5-2-5.08_1x02_P5.08mm_Horizontal</footprint>
+      <description>Screw terminal 2-pin 5.08 mm, 5 V arm 3 out: pin 1 = +5 V, pin 2 = GND</description>
+      <fields>
+        <field name="MPN">KF301-5.0-2P</field>
+        <field name="LCSC Part #">C474881</field>
+        <field name="Footprint">TerminalBlock_Phoenix:TerminalBlock_Phoenix_MKDS-1,5-2-5.08_1x02_P5.08mm_Horizontal</field>
+        <field name="Datasheet"/>
+        <field name="Description">Screw terminal 2-pin 5.08 mm, 5 V arm 3 out: pin 1 = +5 V, pin 2 = GND</field>
+      </fields>
+      <libsource lib="Connector" part="Screw_Terminal_01x02" description="Generic screw terminal, single row, 01x02, script generated (kicad-library-utils/schlib/autogen/connector/)"/>
+      <property name="MPN" value="KF301-5.0-2P"/>
+      <property name="LCSC Part #" value="C474881"/>
+      <property name="Sheetname" value="xmas_hub"/>
+      <property name="Sheetfile" value="xmas_hub.kicad_sch"/>
+      <property name="ki_keywords" value="screw terminal"/>
+      <property name="ki_fp_filters" value="TerminalBlock*:*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>f4d3d272-62ee-5d0b-acc4-26a47051b61d</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="J5">
+      <value>ARM 4 5V</value>
+      <footprint>TerminalBlock_Phoenix:TerminalBlock_Phoenix_MKDS-1,5-2-5.08_1x02_P5.08mm_Horizontal</footprint>
+      <description>Screw terminal 2-pin 5.08 mm, 5 V arm 4 out: pin 1 = +5 V, pin 2 = GND</description>
+      <fields>
+        <field name="MPN">KF301-5.0-2P</field>
+        <field name="LCSC Part #">C474881</field>
+        <field name="Footprint">TerminalBlock_Phoenix:TerminalBlock_Phoenix_MKDS-1,5-2-5.08_1x02_P5.08mm_Horizontal</field>
+        <field name="Datasheet"/>
+        <field name="Description">Screw terminal 2-pin 5.08 mm, 5 V arm 4 out: pin 1 = +5 V, pin 2 = GND</field>
+      </fields>
+      <libsource lib="Connector" part="Screw_Terminal_01x02" description="Generic screw terminal, single row, 01x02, script generated (kicad-library-utils/schlib/autogen/connector/)"/>
+      <property name="MPN" value="KF301-5.0-2P"/>
+      <property name="LCSC Part #" value="C474881"/>
+      <property name="Sheetname" value="xmas_hub"/>
+      <property name="Sheetfile" value="xmas_hub.kicad_sch"/>
+      <property name="ki_keywords" value="screw terminal"/>
+      <property name="ki_fp_filters" value="TerminalBlock*:*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>33ef65bc-2c29-5315-9151-9385fa702b35</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="L1">
+      <value>10uH</value>
+      <footprint>Inductor_SMD:L_Sunlord_MWSA0804S</footprint>
+      <description>Shielded power inductor 10 uH, Isat 7 A, Irms 5.5 A, 59 mOhm, 8x8x4 mm</description>
+      <fields>
+        <field name="MPN">MWSA0804S-100MT</field>
+        <field name="LCSC Part #">C17700171</field>
+        <field name="Footprint">Inductor_SMD:L_Sunlord_MWSA0804S</field>
+        <field name="Datasheet"/>
+        <field name="Description">Shielded power inductor 10 uH, Isat 7 A, Irms 5.5 A, 59 mOhm, 8x8x4 mm</field>
+      </fields>
+      <libsource lib="Device" part="L" description="Inductor"/>
+      <property name="MPN" value="MWSA0804S-100MT"/>
+      <property name="LCSC Part #" value="C17700171"/>
+      <property name="Sheetname" value="xmas_hub"/>
+      <property name="Sheetfile" value="xmas_hub.kicad_sch"/>
+      <property name="ki_keywords" value="inductor choke coil reactor magnetic"/>
+      <property name="ki_fp_filters" value="Choke_* *Coil* Inductor_* L_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>269fc2e4-5199-5917-9e1d-c004dc5c40c4</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="L2">
+      <value>10uH</value>
+      <footprint>Inductor_SMD:L_Sunlord_MWSA0804S</footprint>
+      <description>Shielded power inductor 10 uH, Isat 7 A, Irms 5.5 A, 59 mOhm, 8x8x4 mm</description>
+      <fields>
+        <field name="MPN">MWSA0804S-100MT</field>
+        <field name="LCSC Part #">C17700171</field>
+        <field name="Footprint">Inductor_SMD:L_Sunlord_MWSA0804S</field>
+        <field name="Datasheet"/>
+        <field name="Description">Shielded power inductor 10 uH, Isat 7 A, Irms 5.5 A, 59 mOhm, 8x8x4 mm</field>
+      </fields>
+      <libsource lib="Device" part="L" description="Inductor"/>
+      <property name="MPN" value="MWSA0804S-100MT"/>
+      <property name="LCSC Part #" value="C17700171"/>
+      <property name="Sheetname" value="xmas_hub"/>
+      <property name="Sheetfile" value="xmas_hub.kicad_sch"/>
+      <property name="ki_keywords" value="inductor choke coil reactor magnetic"/>
+      <property name="ki_fp_filters" value="Choke_* *Coil* Inductor_* L_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>ee1a57bf-3f9c-51cc-ad9f-2a796e19ac66</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="L3">
+      <value>10uH</value>
+      <footprint>Inductor_SMD:L_Sunlord_MWSA0804S</footprint>
+      <description>Shielded power inductor 10 uH, Isat 7 A, Irms 5.5 A, 59 mOhm, 8x8x4 mm</description>
+      <fields>
+        <field name="MPN">MWSA0804S-100MT</field>
+        <field name="LCSC Part #">C17700171</field>
+        <field name="Footprint">Inductor_SMD:L_Sunlord_MWSA0804S</field>
+        <field name="Datasheet"/>
+        <field name="Description">Shielded power inductor 10 uH, Isat 7 A, Irms 5.5 A, 59 mOhm, 8x8x4 mm</field>
+      </fields>
+      <libsource lib="Device" part="L" description="Inductor"/>
+      <property name="MPN" value="MWSA0804S-100MT"/>
+      <property name="LCSC Part #" value="C17700171"/>
+      <property name="Sheetname" value="xmas_hub"/>
+      <property name="Sheetfile" value="xmas_hub.kicad_sch"/>
+      <property name="ki_keywords" value="inductor choke coil reactor magnetic"/>
+      <property name="ki_fp_filters" value="Choke_* *Coil* Inductor_* L_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>6d399616-9f52-5395-9a0c-8dc41160d135</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="L4">
+      <value>10uH</value>
+      <footprint>Inductor_SMD:L_Sunlord_MWSA0804S</footprint>
+      <description>Shielded power inductor 10 uH, Isat 7 A, Irms 5.5 A, 59 mOhm, 8x8x4 mm</description>
+      <fields>
+        <field name="MPN">MWSA0804S-100MT</field>
+        <field name="LCSC Part #">C17700171</field>
+        <field name="Footprint">Inductor_SMD:L_Sunlord_MWSA0804S</field>
+        <field name="Datasheet"/>
+        <field name="Description">Shielded power inductor 10 uH, Isat 7 A, Irms 5.5 A, 59 mOhm, 8x8x4 mm</field>
+      </fields>
+      <libsource lib="Device" part="L" description="Inductor"/>
+      <property name="MPN" value="MWSA0804S-100MT"/>
+      <property name="LCSC Part #" value="C17700171"/>
+      <property name="Sheetname" value="xmas_hub"/>
+      <property name="Sheetfile" value="xmas_hub.kicad_sch"/>
+      <property name="ki_keywords" value="inductor choke coil reactor magnetic"/>
+      <property name="ki_fp_filters" value="Choke_* *Coil* Inductor_* L_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>1acb9f3e-f5a8-5643-a478-dc4b5788fdb3</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="Q1">
+      <value>AOD417</value>
+      <footprint>Package_TO_SOT_SMD:TO-252-2</footprint>
+      <description>P-MOSFET -30 V, 25 A, 10 mOhm, DPAK; reverse polarity protection</description>
+      <fields>
+        <field name="MPN">AOD417</field>
+        <field name="LCSC Part #">C131415</field>
+        <field name="Footprint">Package_TO_SOT_SMD:TO-252-2</field>
+        <field name="Datasheet"/>
+        <field name="Description">P-MOSFET -30 V, 25 A, 10 mOhm, DPAK; reverse polarity protection</field>
+      </fields>
+      <libsource lib="Transistor_FET" part="Q_PMOS_GDS" description="P-MOSFET transistor, gate/drain/source"/>
+      <property name="MPN" value="AOD417"/>
+      <property name="LCSC Part #" value="C131415"/>
+      <property name="Sheetname" value="xmas_hub"/>
+      <property name="Sheetfile" value="xmas_hub.kicad_sch"/>
+      <property name="ki_keywords" value="transistor PMOS P-MOS P-MOSFET"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>453f5aa8-5abf-5d1a-94f0-2bc282c7bd0f</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+            <pin num="3"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="R1">
+      <value>100k</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <description>Q1 gate pull-down (0603 1%)</description>
+      <fields>
+        <field name="MPN">0603WAF1003T5E</field>
+        <field name="LCSC Part #">C25803</field>
+        <field name="Footprint">Resistor_SMD:R_0603_1608Metric</field>
+        <field name="Datasheet"/>
+        <field name="Description">Q1 gate pull-down (0603 1%)</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="MPN" value="0603WAF1003T5E"/>
+      <property name="LCSC Part #" value="C25803"/>
+      <property name="Sheetname" value="xmas_hub"/>
+      <property name="Sheetfile" value="xmas_hub.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>813f5dd9-0055-5efb-a20d-97104ce9e555</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="R2">
+      <value>2.2k</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <description>12 V indicator LED series resistor (0603 1%)</description>
+      <fields>
+        <field name="MPN">0603WAF2201T5E</field>
+        <field name="LCSC Part #">C4190</field>
+        <field name="Footprint">Resistor_SMD:R_0603_1608Metric</field>
+        <field name="Datasheet"/>
+        <field name="Description">12 V indicator LED series resistor (0603 1%)</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="MPN" value="0603WAF2201T5E"/>
+      <property name="LCSC Part #" value="C4190"/>
+      <property name="Sheetname" value="xmas_hub"/>
+      <property name="Sheetfile" value="xmas_hub.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>74d04677-c8f4-558a-a214-a57ae481bad4</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="R11">
+      <value>100k</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <description>Feedback divider, top (0603 1%)</description>
+      <fields>
+        <field name="MPN">0603WAF1003T5E</field>
+        <field name="LCSC Part #">C25803</field>
+        <field name="Footprint">Resistor_SMD:R_0603_1608Metric</field>
+        <field name="Datasheet"/>
+        <field name="Description">Feedback divider, top (0603 1%)</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="MPN" value="0603WAF1003T5E"/>
+      <property name="LCSC Part #" value="C25803"/>
+      <property name="Sheetname" value="xmas_hub"/>
+      <property name="Sheetfile" value="xmas_hub.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>0595dc4c-ece7-57ed-bd81-7718d0639d1f</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="R12">
+      <value>13.7k</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <description>Feedback divider, bottom: Vout = 0.596 V x (1 + 100k/13.7k) = 4.95 V (0603 1%)</description>
+      <fields>
+        <field name="MPN">RC0603FR-0713K7L</field>
+        <field name="LCSC Part #">C482771</field>
+        <field name="Footprint">Resistor_SMD:R_0603_1608Metric</field>
+        <field name="Datasheet"/>
+        <field name="Description">Feedback divider, bottom: Vout = 0.596 V x (1 + 100k/13.7k) = 4.95 V (0603 1%)</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="MPN" value="RC0603FR-0713K7L"/>
+      <property name="LCSC Part #" value="C482771"/>
+      <property name="Sheetname" value="xmas_hub"/>
+      <property name="Sheetfile" value="xmas_hub.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>88dbb16a-a7c6-598e-b8cd-deba819b26dc</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="R13">
+      <value>1k</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <description>Arm LED series resistor (0603 1%)</description>
+      <fields>
+        <field name="MPN">0603WAF1001T5E</field>
+        <field name="LCSC Part #">C21190</field>
+        <field name="Footprint">Resistor_SMD:R_0603_1608Metric</field>
+        <field name="Datasheet"/>
+        <field name="Description">Arm LED series resistor (0603 1%)</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="MPN" value="0603WAF1001T5E"/>
+      <property name="LCSC Part #" value="C21190"/>
+      <property name="Sheetname" value="xmas_hub"/>
+      <property name="Sheetfile" value="xmas_hub.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>d88bf987-2544-5e82-8a74-59231b995c09</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="R21">
+      <value>100k</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <description>Feedback divider, top (0603 1%)</description>
+      <fields>
+        <field name="MPN">0603WAF1003T5E</field>
+        <field name="LCSC Part #">C25803</field>
+        <field name="Footprint">Resistor_SMD:R_0603_1608Metric</field>
+        <field name="Datasheet"/>
+        <field name="Description">Feedback divider, top (0603 1%)</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="MPN" value="0603WAF1003T5E"/>
+      <property name="LCSC Part #" value="C25803"/>
+      <property name="Sheetname" value="xmas_hub"/>
+      <property name="Sheetfile" value="xmas_hub.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>8921c84d-ffe4-525f-805c-dffa760388c0</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="R22">
+      <value>13.7k</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <description>Feedback divider, bottom: Vout = 0.596 V x (1 + 100k/13.7k) = 4.95 V (0603 1%)</description>
+      <fields>
+        <field name="MPN">RC0603FR-0713K7L</field>
+        <field name="LCSC Part #">C482771</field>
+        <field name="Footprint">Resistor_SMD:R_0603_1608Metric</field>
+        <field name="Datasheet"/>
+        <field name="Description">Feedback divider, bottom: Vout = 0.596 V x (1 + 100k/13.7k) = 4.95 V (0603 1%)</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="MPN" value="RC0603FR-0713K7L"/>
+      <property name="LCSC Part #" value="C482771"/>
+      <property name="Sheetname" value="xmas_hub"/>
+      <property name="Sheetfile" value="xmas_hub.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>d2c67517-f0ab-5d00-9c7e-0c9b536dc80c</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="R23">
+      <value>1k</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <description>Arm LED series resistor (0603 1%)</description>
+      <fields>
+        <field name="MPN">0603WAF1001T5E</field>
+        <field name="LCSC Part #">C21190</field>
+        <field name="Footprint">Resistor_SMD:R_0603_1608Metric</field>
+        <field name="Datasheet"/>
+        <field name="Description">Arm LED series resistor (0603 1%)</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="MPN" value="0603WAF1001T5E"/>
+      <property name="LCSC Part #" value="C21190"/>
+      <property name="Sheetname" value="xmas_hub"/>
+      <property name="Sheetfile" value="xmas_hub.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>f4da9038-7ce8-50aa-bb04-294d56919ddd</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="R31">
+      <value>100k</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <description>Feedback divider, top (0603 1%)</description>
+      <fields>
+        <field name="MPN">0603WAF1003T5E</field>
+        <field name="LCSC Part #">C25803</field>
+        <field name="Footprint">Resistor_SMD:R_0603_1608Metric</field>
+        <field name="Datasheet"/>
+        <field name="Description">Feedback divider, top (0603 1%)</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="MPN" value="0603WAF1003T5E"/>
+      <property name="LCSC Part #" value="C25803"/>
+      <property name="Sheetname" value="xmas_hub"/>
+      <property name="Sheetfile" value="xmas_hub.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>d4e53489-1955-5866-8c71-44f07154c714</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="R32">
+      <value>13.7k</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <description>Feedback divider, bottom: Vout = 0.596 V x (1 + 100k/13.7k) = 4.95 V (0603 1%)</description>
+      <fields>
+        <field name="MPN">RC0603FR-0713K7L</field>
+        <field name="LCSC Part #">C482771</field>
+        <field name="Footprint">Resistor_SMD:R_0603_1608Metric</field>
+        <field name="Datasheet"/>
+        <field name="Description">Feedback divider, bottom: Vout = 0.596 V x (1 + 100k/13.7k) = 4.95 V (0603 1%)</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="MPN" value="RC0603FR-0713K7L"/>
+      <property name="LCSC Part #" value="C482771"/>
+      <property name="Sheetname" value="xmas_hub"/>
+      <property name="Sheetfile" value="xmas_hub.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>e0339062-e23b-5ffa-a781-af1de7f12edd</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="R33">
+      <value>1k</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <description>Arm LED series resistor (0603 1%)</description>
+      <fields>
+        <field name="MPN">0603WAF1001T5E</field>
+        <field name="LCSC Part #">C21190</field>
+        <field name="Footprint">Resistor_SMD:R_0603_1608Metric</field>
+        <field name="Datasheet"/>
+        <field name="Description">Arm LED series resistor (0603 1%)</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="MPN" value="0603WAF1001T5E"/>
+      <property name="LCSC Part #" value="C21190"/>
+      <property name="Sheetname" value="xmas_hub"/>
+      <property name="Sheetfile" value="xmas_hub.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>e8a8fe97-9baa-564f-a224-938c4f55e5e0</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="R41">
+      <value>100k</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <description>Feedback divider, top (0603 1%)</description>
+      <fields>
+        <field name="MPN">0603WAF1003T5E</field>
+        <field name="LCSC Part #">C25803</field>
+        <field name="Footprint">Resistor_SMD:R_0603_1608Metric</field>
+        <field name="Datasheet"/>
+        <field name="Description">Feedback divider, top (0603 1%)</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="MPN" value="0603WAF1003T5E"/>
+      <property name="LCSC Part #" value="C25803"/>
+      <property name="Sheetname" value="xmas_hub"/>
+      <property name="Sheetfile" value="xmas_hub.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>12850e21-b5e7-51c6-9e4e-8a0b93f7b985</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="R42">
+      <value>13.7k</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <description>Feedback divider, bottom: Vout = 0.596 V x (1 + 100k/13.7k) = 4.95 V (0603 1%)</description>
+      <fields>
+        <field name="MPN">RC0603FR-0713K7L</field>
+        <field name="LCSC Part #">C482771</field>
+        <field name="Footprint">Resistor_SMD:R_0603_1608Metric</field>
+        <field name="Datasheet"/>
+        <field name="Description">Feedback divider, bottom: Vout = 0.596 V x (1 + 100k/13.7k) = 4.95 V (0603 1%)</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="MPN" value="RC0603FR-0713K7L"/>
+      <property name="LCSC Part #" value="C482771"/>
+      <property name="Sheetname" value="xmas_hub"/>
+      <property name="Sheetfile" value="xmas_hub.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>b5c7c55b-3105-5ceb-a6b0-5e0d46aa1da6</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="R43">
+      <value>1k</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <description>Arm LED series resistor (0603 1%)</description>
+      <fields>
+        <field name="MPN">0603WAF1001T5E</field>
+        <field name="LCSC Part #">C21190</field>
+        <field name="Footprint">Resistor_SMD:R_0603_1608Metric</field>
+        <field name="Datasheet"/>
+        <field name="Description">Arm LED series resistor (0603 1%)</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="MPN" value="0603WAF1001T5E"/>
+      <property name="LCSC Part #" value="C21190"/>
+      <property name="Sheetname" value="xmas_hub"/>
+      <property name="Sheetfile" value="xmas_hub.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>bdf8df22-c21f-5280-a6ff-efa05f98afb3</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="TP1">
+      <value>+12V</value>
+      <footprint>TestPoint:TestPoint_Pad_D1.5mm</footprint>
+      <description>Test point</description>
+      <fields>
+        <field name="Footprint">TestPoint:TestPoint_Pad_D1.5mm</field>
+        <field name="Datasheet"/>
+        <field name="Description">Test point</field>
+      </fields>
+      <libsource lib="Connector" part="TestPoint" description="test point"/>
+      <property name="Sheetname" value="xmas_hub"/>
+      <property name="Sheetfile" value="xmas_hub.kicad_sch"/>
+      <property name="exclude_from_bom"/>
+      <property name="ki_keywords" value="test point tp"/>
+      <property name="ki_fp_filters" value="Pin* Test*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>232e7fa5-73b0-595c-8e88-ff149e808a9f</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="TP2">
+      <value>GND</value>
+      <footprint>TestPoint:TestPoint_Pad_D1.5mm</footprint>
+      <description>Test point</description>
+      <fields>
+        <field name="Footprint">TestPoint:TestPoint_Pad_D1.5mm</field>
+        <field name="Datasheet"/>
+        <field name="Description">Test point</field>
+      </fields>
+      <libsource lib="Connector" part="TestPoint" description="test point"/>
+      <property name="Sheetname" value="xmas_hub"/>
+      <property name="Sheetfile" value="xmas_hub.kicad_sch"/>
+      <property name="exclude_from_bom"/>
+      <property name="ki_keywords" value="test point tp"/>
+      <property name="ki_fp_filters" value="Pin* Test*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>295b440c-5cd6-502a-9498-b759a71da49f</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="U1">
+      <value>TPS54302DDCR</value>
+      <footprint>Package_TO_SOT_SMD:SOT-23-6</footprint>
+      <datasheet>https://www.ti.com/lit/ds/symlink/tps54302.pdf</datasheet>
+      <description>4.5-28 V input, 3 A synchronous step-down converter, 400 kHz, SOT-23-6</description>
+      <fields>
+        <field name="MPN">TPS54302DDCR</field>
+        <field name="LCSC Part #">C311983</field>
+        <field name="Footprint">Package_TO_SOT_SMD:SOT-23-6</field>
+        <field name="Datasheet">https://www.ti.com/lit/ds/symlink/tps54302.pdf</field>
+        <field name="Description">4.5-28 V input, 3 A synchronous step-down converter, 400 kHz, SOT-23-6</field>
+      </fields>
+      <libsource lib="Regulator_Switching" part="TPS54302" description="3A, 4.5 to 28V Input, EMI Friendly integrated switch synchronous step-down regulator, pulse-skipping, SOT-23-6"/>
+      <property name="MPN" value="TPS54302DDCR"/>
+      <property name="LCSC Part #" value="C311983"/>
+      <property name="Sheetname" value="xmas_hub"/>
+      <property name="Sheetfile" value="xmas_hub.kicad_sch"/>
+      <property name="ki_keywords" value="switching buck converter power-supply voltage regulator emi spread spectrum"/>
+      <property name="ki_fp_filters" value="SOT?23*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>4b59ee89-5beb-5662-a953-38b1fc59fb37</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="3"/>
+            <pin num="5"/>
+            <pin num="1"/>
+            <pin num="6"/>
+            <pin num="2"/>
+            <pin num="4"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="U2">
+      <value>TPS54302DDCR</value>
+      <footprint>Package_TO_SOT_SMD:SOT-23-6</footprint>
+      <datasheet>https://www.ti.com/lit/ds/symlink/tps54302.pdf</datasheet>
+      <description>4.5-28 V input, 3 A synchronous step-down converter, 400 kHz, SOT-23-6</description>
+      <fields>
+        <field name="MPN">TPS54302DDCR</field>
+        <field name="LCSC Part #">C311983</field>
+        <field name="Footprint">Package_TO_SOT_SMD:SOT-23-6</field>
+        <field name="Datasheet">https://www.ti.com/lit/ds/symlink/tps54302.pdf</field>
+        <field name="Description">4.5-28 V input, 3 A synchronous step-down converter, 400 kHz, SOT-23-6</field>
+      </fields>
+      <libsource lib="Regulator_Switching" part="TPS54302" description="3A, 4.5 to 28V Input, EMI Friendly integrated switch synchronous step-down regulator, pulse-skipping, SOT-23-6"/>
+      <property name="MPN" value="TPS54302DDCR"/>
+      <property name="LCSC Part #" value="C311983"/>
+      <property name="Sheetname" value="xmas_hub"/>
+      <property name="Sheetfile" value="xmas_hub.kicad_sch"/>
+      <property name="ki_keywords" value="switching buck converter power-supply voltage regulator emi spread spectrum"/>
+      <property name="ki_fp_filters" value="SOT?23*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>6c199b33-c081-5ff2-9ad7-1e787d95e52e</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="3"/>
+            <pin num="5"/>
+            <pin num="1"/>
+            <pin num="6"/>
+            <pin num="2"/>
+            <pin num="4"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="U3">
+      <value>TPS54302DDCR</value>
+      <footprint>Package_TO_SOT_SMD:SOT-23-6</footprint>
+      <datasheet>https://www.ti.com/lit/ds/symlink/tps54302.pdf</datasheet>
+      <description>4.5-28 V input, 3 A synchronous step-down converter, 400 kHz, SOT-23-6</description>
+      <fields>
+        <field name="MPN">TPS54302DDCR</field>
+        <field name="LCSC Part #">C311983</field>
+        <field name="Footprint">Package_TO_SOT_SMD:SOT-23-6</field>
+        <field name="Datasheet">https://www.ti.com/lit/ds/symlink/tps54302.pdf</field>
+        <field name="Description">4.5-28 V input, 3 A synchronous step-down converter, 400 kHz, SOT-23-6</field>
+      </fields>
+      <libsource lib="Regulator_Switching" part="TPS54302" description="3A, 4.5 to 28V Input, EMI Friendly integrated switch synchronous step-down regulator, pulse-skipping, SOT-23-6"/>
+      <property name="MPN" value="TPS54302DDCR"/>
+      <property name="LCSC Part #" value="C311983"/>
+      <property name="Sheetname" value="xmas_hub"/>
+      <property name="Sheetfile" value="xmas_hub.kicad_sch"/>
+      <property name="ki_keywords" value="switching buck converter power-supply voltage regulator emi spread spectrum"/>
+      <property name="ki_fp_filters" value="SOT?23*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>eaa2557d-ec45-530a-a70f-cbabdc6403d9</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="3"/>
+            <pin num="5"/>
+            <pin num="1"/>
+            <pin num="6"/>
+            <pin num="2"/>
+            <pin num="4"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="U4">
+      <value>TPS54302DDCR</value>
+      <footprint>Package_TO_SOT_SMD:SOT-23-6</footprint>
+      <datasheet>https://www.ti.com/lit/ds/symlink/tps54302.pdf</datasheet>
+      <description>4.5-28 V input, 3 A synchronous step-down converter, 400 kHz, SOT-23-6</description>
+      <fields>
+        <field name="MPN">TPS54302DDCR</field>
+        <field name="LCSC Part #">C311983</field>
+        <field name="Footprint">Package_TO_SOT_SMD:SOT-23-6</field>
+        <field name="Datasheet">https://www.ti.com/lit/ds/symlink/tps54302.pdf</field>
+        <field name="Description">4.5-28 V input, 3 A synchronous step-down converter, 400 kHz, SOT-23-6</field>
+      </fields>
+      <libsource lib="Regulator_Switching" part="TPS54302" description="3A, 4.5 to 28V Input, EMI Friendly integrated switch synchronous step-down regulator, pulse-skipping, SOT-23-6"/>
+      <property name="MPN" value="TPS54302DDCR"/>
+      <property name="LCSC Part #" value="C311983"/>
+      <property name="Sheetname" value="xmas_hub"/>
+      <property name="Sheetfile" value="xmas_hub.kicad_sch"/>
+      <property name="ki_keywords" value="switching buck converter power-supply voltage regulator emi spread spectrum"/>
+      <property name="ki_fp_filters" value="SOT?23*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>9255277f-c66d-5688-a614-ab9a4b6a6109</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="3"/>
+            <pin num="5"/>
+            <pin num="1"/>
+            <pin num="6"/>
+            <pin num="2"/>
+            <pin num="4"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+  </components>
+  <libparts>
+    <libpart lib="Connector" part="Barrel_Jack">
+      <description>DC Barrel Jack</description>
+      <footprints>
+        <fp>BarrelJack*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">J</field>
+        <field name="Value">Barrel_Jack</field>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description">DC Barrel Jack</field>
+      </fields>
+      <pins>
+        <pin num="1" name="" type="passive"/>
+        <pin num="2" name="" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Connector" part="Screw_Terminal_01x02">
+      <description>Generic screw terminal, single row, 01x02, script generated (kicad-library-utils/schlib/autogen/connector/)</description>
+      <footprints>
+        <fp>TerminalBlock*:*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">J</field>
+        <field name="Value">Screw_Terminal_01x02</field>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description">Generic screw terminal, single row, 01x02, script generated (kicad-library-utils/schlib/autogen/connector/)</field>
+      </fields>
+      <pins>
+        <pin num="1" name="Pin_1" type="passive"/>
+        <pin num="2" name="Pin_2" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Connector" part="TestPoint">
+      <description>test point</description>
+      <footprints>
+        <fp>Pin*</fp>
+        <fp>Test*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">TP</field>
+        <field name="Value">TestPoint</field>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description">test point</field>
+      </fields>
+      <pins>
+        <pin num="1" name="1" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Device" part="C">
+      <description>Unpolarized capacitor</description>
+      <footprints>
+        <fp>C_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">C</field>
+        <field name="Value">C</field>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description">Unpolarized capacitor</field>
+      </fields>
+      <pins>
+        <pin num="1" name="" type="passive"/>
+        <pin num="2" name="" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Device" part="C_Polarized">
+      <description>Polarized capacitor</description>
+      <footprints>
+        <fp>CP_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">C</field>
+        <field name="Value">C_Polarized</field>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description">Polarized capacitor</field>
+      </fields>
+      <pins>
+        <pin num="1" name="" type="passive"/>
+        <pin num="2" name="" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Device" part="D_Zener">
+      <description>Zener diode</description>
+      <footprints>
+        <fp>TO-???*</fp>
+        <fp>*_Diode_*</fp>
+        <fp>*SingleDiode*</fp>
+        <fp>D_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">D</field>
+        <field name="Value">D_Zener</field>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description">Zener diode</field>
+      </fields>
+      <pins>
+        <pin num="1" name="K" type="passive"/>
+        <pin num="2" name="A" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Device" part="L">
+      <description>Inductor</description>
+      <footprints>
+        <fp>Choke_*</fp>
+        <fp>*Coil*</fp>
+        <fp>Inductor_*</fp>
+        <fp>L_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">L</field>
+        <field name="Value">L</field>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description">Inductor</field>
+      </fields>
+      <pins>
+        <pin num="1" name="1" type="passive"/>
+        <pin num="2" name="2" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Device" part="LED">
+      <description>Light emitting diode</description>
+      <footprints>
+        <fp>LED*</fp>
+        <fp>LED_SMD:*</fp>
+        <fp>LED_THT:*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">D</field>
+        <field name="Value">LED</field>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description">Light emitting diode</field>
+        <field name="Sim.Pins">1=K 2=A</field>
+      </fields>
+      <pins>
+        <pin num="1" name="K" type="passive"/>
+        <pin num="2" name="A" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Device" part="Polyfuse">
+      <description>Resettable fuse, polymeric positive temperature coefficient</description>
+      <footprints>
+        <fp>*polyfuse*</fp>
+        <fp>*PTC*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">F</field>
+        <field name="Value">Polyfuse</field>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description">Resettable fuse, polymeric positive temperature coefficient</field>
+      </fields>
+      <pins>
+        <pin num="1" name="" type="passive"/>
+        <pin num="2" name="" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Device" part="R">
+      <description>Resistor</description>
+      <footprints>
+        <fp>R_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">R</field>
+        <field name="Value">R</field>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description">Resistor</field>
+      </fields>
+      <pins>
+        <pin num="1" name="" type="passive"/>
+        <pin num="2" name="" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Mechanical" part="MountingHole">
+      <description>Mounting Hole without connection</description>
+      <footprints>
+        <fp>MountingHole*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">H</field>
+        <field name="Value">MountingHole</field>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description">Mounting Hole without connection</field>
+      </fields>
+    </libpart>
+    <libpart lib="Regulator_Switching" part="TPS54302">
+      <description>3A, 4.5 to 28V Input, EMI Friendly integrated switch synchronous step-down regulator, pulse-skipping, SOT-23-6</description>
+      <docs>http://www.ti.com/lit/ds/symlink/tps54302.pdf</docs>
+      <footprints>
+        <fp>SOT?23*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">U</field>
+        <field name="Value">TPS54302</field>
+        <field name="Footprint">Package_TO_SOT_SMD:SOT-23-6</field>
+        <field name="Datasheet">http://www.ti.com/lit/ds/symlink/tps54302.pdf</field>
+        <field name="Description">3A, 4.5 to 28V Input, EMI Friendly integrated switch synchronous step-down regulator, pulse-skipping, SOT-23-6</field>
+      </fields>
+      <pins>
+        <pin num="1" name="GND" type="power_in"/>
+        <pin num="2" name="SW" type="power_out"/>
+        <pin num="3" name="VIN" type="power_in"/>
+        <pin num="4" name="FB" type="input"/>
+        <pin num="5" name="EN" type="input"/>
+        <pin num="6" name="BOOT" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Transistor_FET" part="Q_PMOS_GDS">
+      <description>P-MOSFET transistor, gate/drain/source</description>
+      <fields>
+        <field name="Reference">Q</field>
+        <field name="Value">Q_PMOS_GDS</field>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description">P-MOSFET transistor, gate/drain/source</field>
+      </fields>
+      <pins>
+        <pin num="1" name="G" type="input"/>
+        <pin num="2" name="D" type="passive"/>
+        <pin num="3" name="S" type="passive"/>
+      </pins>
+    </libpart>
+  </libparts>
+  <libraries/>
+  <nets>
+    <net code="1" name="+12V" class="Default">
+      <node ref="C1" pin="1" pintype="passive"/>
+      <node ref="C11" pin="1" pintype="passive"/>
+      <node ref="C21" pin="1" pintype="passive"/>
+      <node ref="C31" pin="1" pintype="passive"/>
+      <node ref="C41" pin="1" pintype="passive"/>
+      <node ref="Q1" pin="3" pinfunction="S_3" pintype="passive"/>
+      <node ref="R2" pin="1" pintype="passive"/>
+      <node ref="TP1" pin="1" pinfunction="1_1" pintype="passive"/>
+      <node ref="U1" pin="3" pinfunction="VIN_3" pintype="power_in"/>
+      <node ref="U2" pin="3" pinfunction="VIN_3" pintype="power_in"/>
+      <node ref="U3" pin="3" pinfunction="VIN_3" pintype="power_in"/>
+      <node ref="U4" pin="3" pinfunction="VIN_3" pintype="power_in"/>
+    </net>
+    <net code="2" name="/5V_1" class="Default">
+      <node ref="C13" pin="1" pintype="passive"/>
+      <node ref="C14" pin="1" pintype="passive"/>
+      <node ref="C15" pin="1" pintype="passive"/>
+      <node ref="F11" pin="1" pintype="passive"/>
+      <node ref="L1" pin="2" pinfunction="2_2" pintype="passive"/>
+      <node ref="R11" pin="1" pintype="passive"/>
+    </net>
+    <net code="3" name="/5V_2" class="Default">
+      <node ref="C23" pin="1" pintype="passive"/>
+      <node ref="C24" pin="1" pintype="passive"/>
+      <node ref="C25" pin="1" pintype="passive"/>
+      <node ref="F21" pin="1" pintype="passive"/>
+      <node ref="L2" pin="2" pinfunction="2_2" pintype="passive"/>
+      <node ref="R21" pin="1" pintype="passive"/>
+    </net>
+    <net code="4" name="/5V_3" class="Default">
+      <node ref="C33" pin="1" pintype="passive"/>
+      <node ref="C34" pin="1" pintype="passive"/>
+      <node ref="C35" pin="1" pintype="passive"/>
+      <node ref="F31" pin="1" pintype="passive"/>
+      <node ref="L3" pin="2" pinfunction="2_2" pintype="passive"/>
+      <node ref="R31" pin="1" pintype="passive"/>
+    </net>
+    <net code="5" name="/5V_4" class="Default">
+      <node ref="C43" pin="1" pintype="passive"/>
+      <node ref="C44" pin="1" pintype="passive"/>
+      <node ref="C45" pin="1" pintype="passive"/>
+      <node ref="F41" pin="1" pintype="passive"/>
+      <node ref="L4" pin="2" pinfunction="2_2" pintype="passive"/>
+      <node ref="R41" pin="1" pintype="passive"/>
+    </net>
+    <net code="6" name="/ARM1" class="Default">
+      <node ref="F11" pin="2" pintype="passive"/>
+      <node ref="J2" pin="1" pinfunction="Pin_1_1" pintype="passive"/>
+      <node ref="R13" pin="1" pintype="passive"/>
+    </net>
+    <net code="7" name="/ARM2" class="Default">
+      <node ref="F21" pin="2" pintype="passive"/>
+      <node ref="J3" pin="1" pinfunction="Pin_1_1" pintype="passive"/>
+      <node ref="R23" pin="1" pintype="passive"/>
+    </net>
+    <net code="8" name="/ARM3" class="Default">
+      <node ref="F31" pin="2" pintype="passive"/>
+      <node ref="J4" pin="1" pinfunction="Pin_1_1" pintype="passive"/>
+      <node ref="R33" pin="1" pintype="passive"/>
+    </net>
+    <net code="9" name="/ARM4" class="Default">
+      <node ref="F41" pin="2" pintype="passive"/>
+      <node ref="J5" pin="1" pinfunction="Pin_1_1" pintype="passive"/>
+      <node ref="R43" pin="1" pintype="passive"/>
+    </net>
+    <net code="10" name="/FB1" class="Default">
+      <node ref="C15" pin="2" pintype="passive"/>
+      <node ref="R11" pin="2" pintype="passive"/>
+      <node ref="R12" pin="1" pintype="passive"/>
+      <node ref="U1" pin="4" pinfunction="FB_4" pintype="input"/>
+    </net>
+    <net code="11" name="/FB2" class="Default">
+      <node ref="C25" pin="2" pintype="passive"/>
+      <node ref="R21" pin="2" pintype="passive"/>
+      <node ref="R22" pin="1" pintype="passive"/>
+      <node ref="U2" pin="4" pinfunction="FB_4" pintype="input"/>
+    </net>
+    <net code="12" name="/FB3" class="Default">
+      <node ref="C35" pin="2" pintype="passive"/>
+      <node ref="R31" pin="2" pintype="passive"/>
+      <node ref="R32" pin="1" pintype="passive"/>
+      <node ref="U3" pin="4" pinfunction="FB_4" pintype="input"/>
+    </net>
+    <net code="13" name="/FB4" class="Default">
+      <node ref="C45" pin="2" pintype="passive"/>
+      <node ref="R41" pin="2" pintype="passive"/>
+      <node ref="R42" pin="1" pintype="passive"/>
+      <node ref="U4" pin="4" pinfunction="FB_4" pintype="input"/>
+    </net>
+    <net code="14" name="/SW1" class="Default">
+      <node ref="C12" pin="2" pintype="passive"/>
+      <node ref="L1" pin="1" pinfunction="1_1" pintype="passive"/>
+      <node ref="U1" pin="2" pinfunction="SW_2" pintype="power_out"/>
+    </net>
+    <net code="15" name="/SW2" class="Default">
+      <node ref="C22" pin="2" pintype="passive"/>
+      <node ref="L2" pin="1" pinfunction="1_1" pintype="passive"/>
+      <node ref="U2" pin="2" pinfunction="SW_2" pintype="power_out"/>
+    </net>
+    <net code="16" name="/SW3" class="Default">
+      <node ref="C32" pin="2" pintype="passive"/>
+      <node ref="L3" pin="1" pinfunction="1_1" pintype="passive"/>
+      <node ref="U3" pin="2" pinfunction="SW_2" pintype="power_out"/>
+    </net>
+    <net code="17" name="/SW4" class="Default">
+      <node ref="C42" pin="2" pintype="passive"/>
+      <node ref="L4" pin="1" pinfunction="1_1" pintype="passive"/>
+      <node ref="U4" pin="2" pinfunction="SW_2" pintype="power_out"/>
+    </net>
+    <net code="18" name="/VIN_F" class="Default">
+      <node ref="D1" pin="1" pinfunction="K_1" pintype="passive"/>
+      <node ref="F1" pin="2" pintype="passive"/>
+      <node ref="Q1" pin="2" pinfunction="D_2" pintype="passive"/>
+    </net>
+    <net code="19" name="/VIN_J" class="Default">
+      <node ref="F1" pin="1" pintype="passive"/>
+      <node ref="J1" pin="1" pintype="passive"/>
+    </net>
+    <net code="20" name="GND" class="Default">
+      <node ref="C1" pin="2" pintype="passive"/>
+      <node ref="C11" pin="2" pintype="passive"/>
+      <node ref="C13" pin="2" pintype="passive"/>
+      <node ref="C14" pin="2" pintype="passive"/>
+      <node ref="C21" pin="2" pintype="passive"/>
+      <node ref="C23" pin="2" pintype="passive"/>
+      <node ref="C24" pin="2" pintype="passive"/>
+      <node ref="C31" pin="2" pintype="passive"/>
+      <node ref="C33" pin="2" pintype="passive"/>
+      <node ref="C34" pin="2" pintype="passive"/>
+      <node ref="C41" pin="2" pintype="passive"/>
+      <node ref="C43" pin="2" pintype="passive"/>
+      <node ref="C44" pin="2" pintype="passive"/>
+      <node ref="D1" pin="2" pinfunction="A_2" pintype="passive"/>
+      <node ref="D11" pin="1" pinfunction="K_1" pintype="passive"/>
+      <node ref="D2" pin="1" pinfunction="K_1" pintype="passive"/>
+      <node ref="D21" pin="1" pinfunction="K_1" pintype="passive"/>
+      <node ref="D31" pin="1" pinfunction="K_1" pintype="passive"/>
+      <node ref="D41" pin="1" pinfunction="K_1" pintype="passive"/>
+      <node ref="J1" pin="2" pintype="passive"/>
+      <node ref="J2" pin="2" pinfunction="Pin_2_2" pintype="passive"/>
+      <node ref="J3" pin="2" pinfunction="Pin_2_2" pintype="passive"/>
+      <node ref="J4" pin="2" pinfunction="Pin_2_2" pintype="passive"/>
+      <node ref="J5" pin="2" pinfunction="Pin_2_2" pintype="passive"/>
+      <node ref="R1" pin="2" pintype="passive"/>
+      <node ref="R12" pin="2" pintype="passive"/>
+      <node ref="R22" pin="2" pintype="passive"/>
+      <node ref="R32" pin="2" pintype="passive"/>
+      <node ref="R42" pin="2" pintype="passive"/>
+      <node ref="TP2" pin="1" pinfunction="1_1" pintype="passive"/>
+      <node ref="U1" pin="1" pinfunction="GND_1" pintype="power_in"/>
+      <node ref="U2" pin="1" pinfunction="GND_1" pintype="power_in"/>
+      <node ref="U3" pin="1" pinfunction="GND_1" pintype="power_in"/>
+      <node ref="U4" pin="1" pinfunction="GND_1" pintype="power_in"/>
+    </net>
+    <net code="21" name="Net-(D2-A)" class="Default">
+      <node ref="D2" pin="2" pinfunction="A_2" pintype="passive"/>
+      <node ref="R2" pin="2" pintype="passive"/>
+    </net>
+    <net code="22" name="Net-(D11-A)" class="Default">
+      <node ref="D11" pin="2" pinfunction="A_2" pintype="passive"/>
+      <node ref="R13" pin="2" pintype="passive"/>
+    </net>
+    <net code="23" name="Net-(D21-A)" class="Default">
+      <node ref="D21" pin="2" pinfunction="A_2" pintype="passive"/>
+      <node ref="R23" pin="2" pintype="passive"/>
+    </net>
+    <net code="24" name="Net-(D31-A)" class="Default">
+      <node ref="D31" pin="2" pinfunction="A_2" pintype="passive"/>
+      <node ref="R33" pin="2" pintype="passive"/>
+    </net>
+    <net code="25" name="Net-(D41-A)" class="Default">
+      <node ref="D41" pin="2" pinfunction="A_2" pintype="passive"/>
+      <node ref="R43" pin="2" pintype="passive"/>
+    </net>
+    <net code="26" name="Net-(Q1-G)" class="Default">
+      <node ref="Q1" pin="1" pinfunction="G_1" pintype="input"/>
+      <node ref="R1" pin="1" pintype="passive"/>
+    </net>
+    <net code="27" name="Net-(U1-BOOT)" class="Default">
+      <node ref="C12" pin="1" pintype="passive"/>
+      <node ref="U1" pin="6" pinfunction="BOOT_6" pintype="passive"/>
+    </net>
+    <net code="28" name="Net-(U2-BOOT)" class="Default">
+      <node ref="C22" pin="1" pintype="passive"/>
+      <node ref="U2" pin="6" pinfunction="BOOT_6" pintype="passive"/>
+    </net>
+    <net code="29" name="Net-(U3-BOOT)" class="Default">
+      <node ref="C32" pin="1" pintype="passive"/>
+      <node ref="U3" pin="6" pinfunction="BOOT_6" pintype="passive"/>
+    </net>
+    <net code="30" name="Net-(U4-BOOT)" class="Default">
+      <node ref="C42" pin="1" pintype="passive"/>
+      <node ref="U4" pin="6" pinfunction="BOOT_6" pintype="passive"/>
+    </net>
+    <net code="31" name="unconnected-(U1-EN-Pad5)" class="Default">
+      <node ref="U1" pin="5" pinfunction="EN_5" pintype="input+no_connect"/>
+    </net>
+    <net code="32" name="unconnected-(U2-EN-Pad5)" class="Default">
+      <node ref="U2" pin="5" pinfunction="EN_5" pintype="input+no_connect"/>
+    </net>
+    <net code="33" name="unconnected-(U3-EN-Pad5)" class="Default">
+      <node ref="U3" pin="5" pinfunction="EN_5" pintype="input+no_connect"/>
+    </net>
+    <net code="34" name="unconnected-(U4-EN-Pad5)" class="Default">
+      <node ref="U4" pin="5" pinfunction="EN_5" pintype="input+no_connect"/>
+    </net>
+  </nets>
+</export>
