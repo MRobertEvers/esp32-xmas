@@ -202,8 +202,8 @@ if "--check" in sys.argv:
 
 # ================================================================== routing
 # --- input -----------------------------------------------------------------
-track("/VIN_J", [padpos("J1", 1), (18.5, 5.5), padpos("F1", 1)], 2.5)
-track("/VIN_F", [padpos("F1", 2), (28.5, 6.1), (28.5, 16.0), (26.0, 18.5), (24.0, 19.7)], 2.5)
+track("/VIN_J", [padpos("J1", 1), (18.5, 5.5), padpos("F1", 1)], 3.0)
+track("/VIN_F", [padpos("F1", 2), (28.5, 6.1), (28.5, 16.0), (26.0, 18.5), (24.0, 19.7)], 3.0)
 track("/VIN_F", [padpos("D1", 1), (28.5, padpos("D1", 1)[1])], 1.0)
 track("GND", [padpos("D1", 2), (22.5, padpos("D1", 2)[1])], 0.8); via("GND", 22.5, padpos("D1", 2)[1])
 track("Net-(Q1-G)", [padpos("Q1", 1), padpos("R1", 1)], 0.3)
@@ -216,7 +216,7 @@ track("GND", [padpos("D2", 1), (24.0, 44.0)], 0.3); via("GND", 24.0, 44.0)
 track("+12V", [padpos("TP1", 1), (BUS_X, 48.5)], 0.5)
 track("GND", [padpos("TP2", 1), (26.5, 50.3)], 0.5); via("GND", 26.5, 50.3)
 # 12 V bus
-track("+12V", [(BUS_X, ROWS[0] - 3.3), (BUS_X, 48.5)], 3.0)
+track("+12V", [(BUS_X, ROWS[0] - 3.5), (BUS_X, 48.5)], 3.0)
 
 # --- arms ------------------------------------------------------------------
 for k, cy in enumerate(ROWS):
@@ -225,10 +225,12 @@ for k, cy in enumerate(ROWS):
                                                      "L%d" % n, "C%d3" % n, "C%d4" % n, "F%d1" % n, "R%d3" % n, "D%d1" % n, "J%d" % (n + 1))
     vin, sw, gnd, fb, boot = padpos(U, 3), padpos(U, 2), padpos(U, 1), padpos(U, 4), padpos(U, 6)
     # 12 V feed -> input cap -> VIN pin
-    track("+12V", [(BUS_X, cy - 3.3), (41.8, cy - 3.3), padpos(C1, 1)], 0.9)
-    track("+12V", [vin, (44.5, cy - 2.0), padpos(C1, 1)], 0.5)
-    track("GND", [padpos(C1, 2), (44.6, cy - 5.7)], 0.6); via("GND", 44.6, cy - 5.7)
-    track("GND", [gnd, (gnd[0], cy + 2.7)], 0.5); via("GND", gnd[0], cy + 2.7)
+    track("+12V", [(BUS_X, cy - 3.5), (41.8, cy - 3.5), padpos(C1, 1)], 1.2)
+    track("+12V", [vin, (44.5, cy - 2.0), padpos(C1, 1)], 0.6)
+    # input cap ground: two 0.8/0.4 vias (HF loop + ~1.5 A ripple)
+    track("GND", [padpos(C1, 2), (44.6, cy - 5.7), (44.6, cy - 4.7)], 0.8); via("GND", 44.6, cy - 5.7, 0.8, 0.4); via("GND", 44.6, cy - 4.7, 0.8, 0.4)
+    # IC ground pin carries the low-side return (~1.8 A avg at 3 A out): two 0.8/0.4 vias
+    track("GND", [gnd, (gnd[0], cy + 2.7), (46.2, cy + 2.7)], 0.6); via("GND", gnd[0], cy + 2.7, 0.8, 0.4); via("GND", 46.2, cy + 2.7, 0.8, 0.4)
     # switch node
     swn = "/SW%d" % n
     track(swn, [sw, (46.8, cy)], 0.7)
@@ -246,8 +248,8 @@ for k, cy in enumerate(ROWS):
     track(vout, [padpos(R1, 1), padpos(C5, 1), (37.3, cy), (37.3, cy + 6.1), (57.4, cy + 6.1), (57.4, cy + 0.5)], 0.25)
     # output node
     track(vout, [padpos(L, 2), (62.4, cy)], 2.0)
-    track("GND", [padpos(C3, 2), (58.7, cy - 4.6)], 0.8); via("GND", 58.7, cy - 4.6)
-    track("GND", [padpos(C4, 2), (58.7, cy + 4.6)], 0.8); via("GND", 58.7, cy + 4.6)
+    track("GND", [padpos(C3, 2), (58.7, cy - 4.6)], 0.8); via("GND", 58.7, cy - 4.6, 0.8, 0.4)
+    track("GND", [padpos(C4, 2), (58.7, cy + 4.6)], 0.8); via("GND", 58.7, cy + 4.6, 0.8, 0.4)
     # arm output after PTC
     armn = "/ARM%d" % n
     track(armn, [padpos(F, 2), (70.46, cy), padpos(J, 1)], 2.0)

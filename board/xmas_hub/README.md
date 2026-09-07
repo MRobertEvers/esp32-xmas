@@ -39,10 +39,26 @@ standoff both assume it.
 ## Layout
 
 80 × 66 mm, two layers, 1 oz. Ground pours on both sides, stitched under each
-buck. The +12V bus is a 3 mm trace down the middle; each arm taps it with a
-0.9 mm feed into its input capacitor. Switch nodes are short and wide; the
-feedback sense runs back along the bottom of each row from the output
-capacitors, away from the inductor. M3 holes in the corners.
+buck. Switch nodes are short and wide; the feedback sense runs back along the
+bottom of each row from the output capacitors, away from the inductor. M3 holes
+in the corners.
+
+Copper widths were sized with IPC‑2221 for 1 oz outer copper at a 10 °C rise
+(0.5 mm ≈ 1.45 A, 1.2 mm ≈ 2.7 A, 2 mm ≈ 4 A, 3 mm ≈ 5.3 A; a 0.4 mm‑drill via
+≈ 1.1 A):
+
+| Net | Current | Copper |
+|---|---|---|
+| Jack → F1 → D1 → Q1 → bus | up to the 5 A PTC | 3.0 mm |
+| +12V bus | total input, ≤5 A | 3.0 mm |
+| Per‑arm 12 V feed into Cin | ~1.4 A avg at 3 A out | 1.2 mm, 0.6 mm stub into the VIN pin |
+| SW node | 3 A pulsed | 1.5 mm, 0.7 mm at the SOT‑23 pin |
+| 5V out (L → Cout → PTC) and ARM (PTC → terminal) | 3 A | 2.0 mm |
+| IC GND pin (low‑side return, ~1.8 A avg) | | 0.6 mm to two 0.8/0.4 mm vias |
+| Cin GND | ~1.5 A ripple | 0.8 mm to two 0.8/0.4 mm vias |
+| Cout GND | ripple | 0.8 mm to one 0.8/0.4 mm via each |
+| Terminal and jack GND pins | 3 A / 5 A | through‑hole into both planes |
+| FB sense, boot, LEDs, test points | signal | 0.25–0.5 mm |
 
 ## Arm cables
 
