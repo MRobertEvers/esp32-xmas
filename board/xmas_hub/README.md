@@ -5,7 +5,7 @@ barrel supply goes in, four independently regulated and fused 5 V "arms" come
 out on screw terminals, and each arm feeds a short cluster of 3–4 `xmas_orn`
 ornaments through their DC‑002 (3.5 × 1.3 mm) barrel jacks.
 
-![top](xmas_hub_top.png)
+![top](docs/xmas_hub_rev1_top.png)
 
 ## Why per-arm regulators
 
@@ -15,6 +15,8 @@ it would at 5 V, and every arm is its own 5 V domain. A short or overload on
 one arm drops that arm's PTC / that buck's hiccup limit, and the other three
 keep running. "Isolated" here means independently regulated and fused, not
 galvanically isolated — all arms share ground.
+
+![angled](docs/xmas_hub_rev1_iso.png)
 
 ## Circuit
 
@@ -53,7 +55,10 @@ fed from the hub.
 ## Documents
 
 `docs/` has the rev 1 schematic and the top and bottom layer plots as PDFs,
-same naming as the ornament board. `docs/datasheets/` holds the datasheets the
+same naming as the ornament board, plus PNG renders: the
+[schematic](docs/xmas_hub_rev1_schematic.png), and
+[top](docs/xmas_hub_rev1_top.png), [bottom](docs/xmas_hub_rev1_bottom.png) and
+[angled](docs/xmas_hub_rev1_iso.png) 3D views of the board. `docs/datasheets/` holds the datasheets the
 design was checked against: TPS54302, AOD417, SMAJ15A, both PTCs, the DC‑005
 jack (whose drawing is where the pin mapping above comes from), the KF301
 terminal, the electrolytic and the Sunlord MWSA inductor series.
