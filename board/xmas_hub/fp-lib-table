@@ -1,0 +1,4 @@
+(fp_lib_table
+  (version 7)
+  (lib (name "xmas_hub")(type "KiCad")(uri "${KIPRJMOD}/xmas_hub.pretty")(options "")(descr "Project footprints (DC-005 barrel jack with correct pin numbering)"))
+)

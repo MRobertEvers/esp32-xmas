@@ -1,0 +1,19 @@
+# Overlay for board rev 2 (ESP32-S3-WROOM-1-N16R8: 16 MB flash, 8 MB octal PSRAM).
+# The base sdkconfig.defaults targets rev 1 (MINI-1-N8, 8 MB flash, no PSRAM) and
+# also runs on rev 2. Use this overlay only for rev 2 hardware:
+#
+#   idf.py -DSDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.rev2.defaults" build
+#
+# Nothing in the firmware needs PSRAM (see the note in sdkconfig.defaults); it is
+# enabled here so the 8 MB is there if a later model or a bigger framebuffer wants it.
+
+# Flash: N16R8 is a 16 MB quad-SPI flash
+CONFIG_ESPTOOLPY_FLASHSIZE_8MB=n
+CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y
+
+# PSRAM: 8 MB octal at 80 MHz. GPIO35/36/37 are taken by the PSRAM bus on R8
+# modules; the board uses none of them.
+CONFIG_SPIRAM=y
+CONFIG_SPIRAM_MODE_OCT=y
+CONFIG_SPIRAM_SPEED_80M=y
+CONFIG_SPIRAM_IGNORE_NOTFOUND=y
