@@ -226,25 +226,34 @@ module rail_left() {
         box(ix0 - eps, ix0 + rail_h,          notch_y0 - 0.3, notch_y1 + 0.3, zc - rail_t/2, zc + rail_t/2);
     }
 }
-module outer_sleeve() {
-    xc = (sx0 + sx1) / 2;  zc = (sz0 + sz1) / 2;
-    difference() {
-        union() {
-            rbox4(sx0, sx1, sy0, sy1, sz0, sz1, 1.0, 5);
-            // hanging loop, hole front-to-back
-            translate([xc, sy1 + loop_od/2 - 2, zc]) cylinder(d = loop_od, h = loop_t, center = true);
-        }
-        translate([xc, sy1 + loop_od/2 - 2, zc]) cylinder(d = loop_id, h = loop_t + 2, center = true);
-        // pocket, open at the y- end
-        box(ix0, ix1, sy0 - 1, iy1, iz0, iz1);
-        // front window
-        rbox(glass_x0 - front_win_margin, glass_x1 + front_win_margin,
-             glass_y0 - front_win_margin, glass_y1 + front_win_margin, iz1 - eps, sz1 + 1, 1.5);
-        // cable holes, same places as the core's windows
-        xslot(sx0 - 1, ix0 + 1, usb_win[0],  usb_win[1],  usb_win[2],  usb_win[3],  1.5);
-        xslot(ix1 - 1, sx1 + 1, jack_win[0], jack_win[1], jack_win[2], jack_win[3], 2);
+// Everything an outer must subtract: the pocket (with an entry tunnel `ext` long past the
+// core's antenna end), the front window through any front thickness, and the cable holes
+// out to +/-100 in x so thick bodies get tunnels.  `finger` adds a wider recess on the
+// outside of thick bodies so a plug can still be gripped.
+module sleeve_cuts(ext = 1, finger = false) {
+    box(ix0, ix1, sy0 - ext, iy1, iz0, iz1);
+    rbox(glass_x0 - front_win_margin, glass_x1 + front_win_margin,
+         glass_y0 - front_win_margin, glass_y1 + front_win_margin, iz1 - eps, sz1 + 60, 1.5);
+    xslot(ix0 - 100, ix0 + 1, usb_win[0],  usb_win[1],  usb_win[2],  usb_win[3],  1.5);
+    xslot(ix1 - 1, ix1 + 100, jack_win[0], jack_win[1], jack_win[2], jack_win[3], 2);
+    if (finger) {
+        xslot(ix0 - 100, ix0 - 5, usb_win[0] - 2.5,  usb_win[1] + 2.5,  usb_win[2] - 2,  usb_win[3] + 2,  3);
+        xslot(ix1 + 5, ix1 + 100, jack_win[0] - 2.5, jack_win[1] + 2.5, jack_win[2] - 2, jack_win[3] + 2, 3);
     }
-    mirror_x(xc) rail_left();
+}
+module sleeve_rails() mirror_x((sx0 + sx1) / 2) rail_left();
+// hanging loop with its hole front-to-back, standing on the edge y = y_top at x
+module hang_loop(x, y_top)      translate([x, y_top + loop_od/2 - 2, (sz0 + sz1) / 2]) cylinder(d = loop_od, h = loop_t, center = true);
+module hang_loop_hole(x, y_top) translate([x, y_top + loop_od/2 - 2, (sz0 + sz1) / 2]) cylinder(d = loop_id, h = loop_t + 2, center = true);
+
+module outer_sleeve() {
+    xc = (sx0 + sx1) / 2;
+    difference() {
+        union() { rbox4(sx0, sx1, sy0, sy1, sz0, sz1, 1.0, 5); hang_loop(xc, sy1); }
+        hang_loop_hole(xc, sy1);
+        sleeve_cuts();
+    }
+    sleeve_rails();
 }
 
 // ================================================================ mock electronics for the assembly view

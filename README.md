@@ -125,6 +125,8 @@ Parametric OpenSCAD, print-oriented STLs for the Bambu Lab A1 mini, and the core
 groove interface any new outer needs are documented in
 [board/xmas_orn/enclosure/README.md](board/xmas_orn/enclosure/README.md). The barrel jack and
 USB-C are open through both the core and the sleeve.
+Five themed outers (Captain America shield, two Spider-Man variants, Iron Man, Black Widow)
+share the same pocket and export one STL per colour for the AMS lite.
 
 The power hub gets a plainer two-part box, same toolchain, in
 [board/xmas_hub/enclosure/](board/xmas_hub/enclosure/README.md): four M3 screws from below

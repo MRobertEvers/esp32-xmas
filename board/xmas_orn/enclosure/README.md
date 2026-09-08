@@ -97,6 +97,40 @@ lip covers the bezel's outer rim and keeps the bezel on.
 Print standing on the open end. The closed end bridges 21 mm across the inside, which the A1
 mini does without support. Use a brim: the footprint is small for a 67 mm tall part.
 
+## Themed outers: the Funko Pop! set
+
+**Version 2:** [redesigned superhero outers, previews and printing instructions](README_outers_v2.md)
+are available in `xmas_orn_outers_v2.scad` and `stl/outers_v2/`. The original version below is preserved.
+
+[`xmas_orn_outers.scad`](xmas_orn_outers.scad) includes the case file and builds five sleeves
+on the same pocket, rails, window and cable holes, one per figure on the shelf. Each is a flat
+80 mm-class front with 0.8 mm colour inlays; the core slides in from the flat bottom exactly
+as with the default sleeve.
+
+![outers](docs/outers_front.png)
+
+| Theme | Outline | Parts (colour) |
+|-------|---------|----------------|
+| `cap` | shield, 80 mm disc | body (red), `white` rings + star, `blue` centre |
+| `spidey_nwh` | mask, 50 x 66 | body (red), `black` web + eye outlines, `white` eyes |
+| `ironman` | chest plate, 58 x 79 | body (red), `gold` reactor ring, side bars, plates |
+| `widow` | emblem, 80 mm disc | body (black), `red` rim + hourglass |
+| `spidey_classic` | web disc, 80 mm | body (red), `black` web, `blue` lower suit |
+
+`./export_outers.sh` writes one STL per colour into `stl/outers/<theme>/`, all standing on the
+flat bottom in the same coordinates. In Bambu Studio drag a theme's STLs in together, answer
+**Yes** to "load these files as a single object with multiple parts", and give each part its
+filament. Print standing on the flat with a brim, as for the default sleeve. The inlays are on
+a vertical face, so no colour change happens across layers and the purge is small.
+
+Filament: red and blue PLA are on hand. The set also needs **white** (cap, spidey_nwh),
+**black** (spidey_nwh, widow, spidey_classic) and **gold or yellow** (ironman) PLA. The grey
+PETG is not usable here; PETG and PLA do not bond in one print.
+
+The thick bodies get tunnels for the plugs: the jack and USB holes run out to the rim, and a
+wider finger recess on the outside lets you grip a plug that is 20 mm inside the body.
+`check_<theme>` parts render the intersection with the core; all are empty.
+
 ## Things to measure before trusting the numbers
 
 Everything above came from the KiCad board and the display vendor drawing, not from parts in

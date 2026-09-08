@@ -1,0 +1,57 @@
+{
+  "revision": "Iron Man v7, trapezoid reactor chest and extended collar",
+  "parts": {
+    "ironman_black.stl": {
+      "sha256": "e8c3dba26e37c71a739ab141de1ed77bc92d0cc932e9850e484e8d4f32293623",
+      "watertight": true,
+      "winding_consistent": true,
+      "components": 8,
+      "volume_mm3": 1253.4766
+    },
+    "ironman_body.stl": {
+      "sha256": "c8c4887ecf51682cc3eeddd42bcfce31b149d846477e4f1270c3b268c28bff8d",
+      "watertight": true,
+      "winding_consistent": true,
+      "components": 1,
+      "volume_mm3": 80852.082
+    },
+    "ironman_gold.stl": {
+      "sha256": "8d1a1d7e68dba49dcbf6bcedda8a366eb065064d9de6f21f869feabd2ac87a4c",
+      "watertight": true,
+      "winding_consistent": true,
+      "components": 3,
+      "volume_mm3": 291.1997
+    },
+    "ironman_white.stl": {
+      "sha256": "dd1ef365bc397d9a7a1d60e33c88339702b26a6e8c394ea00ec81cab9ef26793",
+      "watertight": true,
+      "winding_consistent": true,
+      "components": 1,
+      "volume_mm3": 321.6584
+    }
+  },
+  "geometry_checks": {
+    "core": {
+      "empty": true,
+      "residual_volume_mm3": 0
+    },
+    "colours": {
+      "empty": false,
+      "residual_volume_mm3": 2.1221543041368327e-12
+    },
+    "backing": {
+      "empty": true,
+      "residual_volume_mm3": 0
+    }
+  },
+  "tolerance_mm3": 0.0001,
+  "print_dimensions_mm": [
+    82.0,
+    25.0,
+    95.0
+  ],
+  "source_sha256": {
+    "ironman_v7.scad": "b90252f3a27ac2bc3dcbf834e769a1591146eaef0206e19e7b23561a4d2dbf49",
+    "xmas_orn_case.scad": "353e4d7a6c33eb5a996bc165edbf55d3b42be81c8400d3dd146988db9215f410"
+  }
+}

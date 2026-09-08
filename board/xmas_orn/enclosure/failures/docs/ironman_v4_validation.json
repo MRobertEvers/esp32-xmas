@@ -1,0 +1,57 @@
+{
+  "revision": "Iron Man v4, 2008 Mark III inspired",
+  "parts": {
+    "ironman_black.stl": {
+      "sha256": "c93351e66562790468511a38eb0c7eb4a7b6a68017072a71b50f013ab5c497a3",
+      "watertight": true,
+      "winding_consistent": true,
+      "components": 3,
+      "volume_mm3": 76.6639
+    },
+    "ironman_body.stl": {
+      "sha256": "221c0c2521215272b2b3199cacef5dec916c966a788c27f46fd4071a9837759b",
+      "watertight": true,
+      "winding_consistent": true,
+      "components": 1,
+      "volume_mm3": 60492.646
+    },
+    "ironman_gold.stl": {
+      "sha256": "67c501c195b8a1aa755b607c84a99c430859be7ee4338e6bee316f31884e3ae4",
+      "watertight": true,
+      "winding_consistent": true,
+      "components": 2,
+      "volume_mm3": 1611.0179
+    },
+    "ironman_white.stl": {
+      "sha256": "88f4194316a05019ef0b3501bba5813755501dd45558c1dc6884780e46bc21be",
+      "watertight": true,
+      "winding_consistent": true,
+      "components": 2,
+      "volume_mm3": 65.984
+    }
+  },
+  "geometry_checks": {
+    "core": {
+      "empty": true,
+      "residual_volume_mm3": 0
+    },
+    "colours": {
+      "empty": false,
+      "residual_volume_mm3": 2.0037305148434825e-12
+    },
+    "backing": {
+      "empty": true,
+      "residual_volume_mm3": 0
+    }
+  },
+  "tolerance_mm3": 0.0001,
+  "print_dimensions_mm": [
+    60.0,
+    25.0,
+    90.0
+  ],
+  "source_sha256": {
+    "ironman_v4.scad": "48cba3bbd4c448a8d4b0d8b280dcecc1c43ab4951f1ae5ca3eb13293e0394e46",
+    "xmas_orn_case.scad": "353e4d7a6c33eb5a996bc165edbf55d3b42be81c8400d3dd146988db9215f410"
+  }
+}

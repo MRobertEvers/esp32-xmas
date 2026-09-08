@@ -1,0 +1,58 @@
+{
+  "revision": "Iron Man v6, reference badge above display",
+  "parts": {
+    "ironman_black.stl": {
+      "sha256": "1dde336a41dcbcede1a109c16f8891de1f4d0d01b99919aae5a7aeda9d28556e",
+      "watertight": true,
+      "winding_consistent": true,
+      "components": 3,
+      "volume_mm3": 959.2863
+    },
+    "ironman_body.stl": {
+      "sha256": "d7b13bce957e0fa93df958a361f1f1054bf266948a0fcb8d3922dbfeb211aa03",
+      "watertight": true,
+      "winding_consistent": true,
+      "components": 1,
+      "volume_mm3": 83681.7
+    },
+    "ironman_cyan.stl": {
+      "sha256": "c230ac92db4880ff170e87620a3f533825571c76779febc99b43e21c26c8a010",
+      "watertight": true,
+      "winding_consistent": true,
+      "components": 2,
+      "volume_mm3": 14.7265
+    },
+    "ironman_gold.stl": {
+      "sha256": "170f8fe1b5ff5bfcb0b57581c2f1628d2b1f511c9f726697ed12f70252b32ce2",
+      "watertight": true,
+      "winding_consistent": true,
+      "components": 5,
+      "volume_mm3": 509.4722
+    }
+  },
+  "geometry_checks": {
+    "core": {
+      "empty": true,
+      "residual_volume_mm3": 0
+    },
+    "colours": {
+      "empty": false,
+      "residual_volume_mm3": 6.063298011819521e-13
+    },
+    "backing": {
+      "empty": true,
+      "residual_volume_mm3": 0
+    }
+  },
+  "tolerance_mm3": 0.0001,
+  "print_dimensions_mm": [
+    60.0,
+    25.0,
+    121.0
+  ],
+  "source_sha256": {
+    "ironman_v6.scad": "2f5f102439beba3717e7c0713c494c0d221b0a040ccd9bf57827c0c28b6cdb25",
+    "ironman_reference_art.scad": "2af425b2355f7736cee8f072585dd0ccdacb49611dc4c2e9d3418776240daec6",
+    "xmas_orn_case.scad": "353e4d7a6c33eb5a996bc165edbf55d3b42be81c8400d3dd146988db9215f410"
+  }
+}

@@ -1,0 +1,57 @@
+{
+  "revision": "Iron Man v9, angular shoulders and arm-shaped sides",
+  "parts": {
+    "ironman_black.stl": {
+      "sha256": "026f1956b0530a46831fd99ce7ec793e9eb6a4f06b000d2969dfa702b47a87e7",
+      "watertight": true,
+      "winding_consistent": true,
+      "components": 12,
+      "volume_mm3": 468.502
+    },
+    "ironman_body.stl": {
+      "sha256": "51bd1891401f800b813df998640760b9fff67061e0691e2cc113b975d1072fa1",
+      "watertight": true,
+      "winding_consistent": true,
+      "components": 1,
+      "volume_mm3": 85756.594
+    },
+    "ironman_gold.stl": {
+      "sha256": "745d9c57177667765217f62fbe73e854f715bfeff0438c7a8e6c5661387b8ef1",
+      "watertight": true,
+      "winding_consistent": true,
+      "components": 4,
+      "volume_mm3": 473.7926
+    },
+    "ironman_white.stl": {
+      "sha256": "c9f4475febac1b54dc938f365fc5c4c92acb06ebafdd87f57e20bc4bf4878773",
+      "watertight": true,
+      "winding_consistent": true,
+      "components": 1,
+      "volume_mm3": 127.7646
+    }
+  },
+  "geometry_checks": {
+    "core": {
+      "empty": true,
+      "residual_volume_mm3": 0
+    },
+    "colours": {
+      "empty": false,
+      "residual_volume_mm3": 4.768874835766231e-08
+    },
+    "backing": {
+      "empty": true,
+      "residual_volume_mm3": 0
+    }
+  },
+  "tolerance_mm3": 0.0001,
+  "print_dimensions_mm": [
+    82.0,
+    25.0,
+    84.0
+  ],
+  "source_sha256": {
+    "ironman_v9.scad": "12480fd30ddb624a51138220f9d658266535b109b628cec09330d02252f1deb1",
+    "xmas_orn_case.scad": "353e4d7a6c33eb5a996bc165edbf55d3b42be81c8400d3dd146988db9215f410"
+  }
+}
