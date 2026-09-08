@@ -120,6 +120,11 @@ groove interface any new outer needs are documented in
 [board/xmas_orn/enclosure/README.md](board/xmas_orn/enclosure/README.md). The barrel jack and
 USB-C are open through both the core and the sleeve.
 
+The power hub gets a plainer two-part box, same toolchain, in
+[board/xmas_hub/enclosure/](board/xmas_hub/enclosure/README.md): four M3 screws from below
+clamp the board and the lid together, with a notch for the 12 V jack and windows for the four
+arm terminals.
+
 ---
 
 ### Power hub (`board/xmas_hub`)
