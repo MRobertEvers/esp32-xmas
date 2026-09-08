@@ -45,3 +45,6 @@ tools/bake_model/build/
 *-backups/
 ~*.lck
 fp-info-cache
+
+# KiCad lock files
+*.lck
