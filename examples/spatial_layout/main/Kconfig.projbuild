@@ -1,0 +1,18 @@
+menu "Spatial layout demo"
+    config XS_WIFI_SSID
+        string "Existing Wi-Fi SSID"
+        default ""
+    config XS_WIFI_PASSWORD
+        string "Existing Wi-Fi password"
+        default ""
+    config XS_MAX_BOARDS
+        int "Maximum discovered boards (including this board)"
+        range 4 65535
+        default 16
+        help
+            Allocations grow quadratically. Choose a capacity that fits RAM;
+            65535 is the wire-format limit, not an achievable ESP32 node count.
+    config XS_GROUP
+        hex "Discovery group (same on every board)"
+        default 0x584d4153
+endmenu

@@ -6,6 +6,12 @@ The model, its animation, its textures and toridraw's lookup tables are all bake
 
 Current subject: the Tree Gnome Village spirit tree (dat2 model **2851**) playing `entendseq`, the idle that fades the orbs in its branches.
 
+For experimental relative positioning of four or more ornaments using their
+existing Wi-Fi radios, see the [spatial layout module](components/xmas_spatial/README.md)
+and [standalone firmware demo](examples/spatial_layout/README.md). The module
+implements discovery, FTM ranging and a documented 3D solver without third-party
+libraries; it is opt-in and does not start Wi-Fi in the renderer.
+
 ---
 
 ## Hardware
