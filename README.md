@@ -96,6 +96,31 @@ all AliExpress unless noted):
 | AYWHP ESP32-S3 dev boards with WROOM-1-N16R8 | 3 | Amazon 114-8171301-3841008 | 2026-06-04 | Not used; dev boards. Handy for bringing up the N16R8 firmware config before rev 2 boards arrive. |
 | 3.3 V / 5 V / 12 V power supply module | 1 | 8212428463975361 (same package) | 2026-06-15 | Not on the board. |
 
+#### JLCPCB placement gotchas (learned on order W2026090908054344, 2026-09-08)
+
+- **Rotations.** `kicad-cli` writes KiCad's raw footprint angle, but JLCPCB
+  applies that angle to *its own* part model, whose 0° differs per package.
+  On the first rev 2 order the 1×7 socket J1 came out vertical and the
+  WROOM-1 U1 was flipped end-for-end (antenna on the board, shield hanging
+  off the edge). JLCPCB's engineer corrected both before production, and the
+  CPL in `production/rev2/` now carries the JLCPCB-correct angles for those
+  two parts (J1 = 0, U1 = 0). Any new footprint needs the same check.
+- **Always open Order History → DFM Analysis after paying** and tick
+  "Show Components": that view is the engineer-adjusted placement that will
+  actually be built. Verify every polarised part (diodes, LEDs, ICs, the
+  module, connectors) against `docs/xmas_orn_rev2_top.png` before the SMT
+  line starts. "Confirm Parts Placement" at order time makes JLCPCB wait for
+  your sign-off instead.
+- **Through-hole parts must be in the CPL** or JLCPCB skips them: the hub's
+  jack, terminal blocks and bulk cap were missing from the SMD-only export.
+  `xmas_hub/production/JLCPCB_xmas_hub_positions.csv` now lists all 60 parts
+  in the five-column form (Designator, Mid X, Mid Y, Rotation, Layer);
+  JLCPCB's parser rejects quoted fields, so keep footprint names out of it.
+- **Part numbers.** Give JLCPCB LCSC C-numbers, not manufacturer numbers; its
+  matcher fails on hyphenated MPNs. Substitutions made on that order: hub Q1
+  AOD417 → AOD4185 (C400894, out of stock); ornament J1 = C22438157,
+  J3 = C165948, SW1/SW2 = C231329.
+
 #### Sourcing the rest
 
 Everything new on rev 2 now carries an `LCSC Part #` field in the schematic and
