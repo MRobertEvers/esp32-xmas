@@ -1,0 +1,57 @@
+{
+  "revision": "Iron Man v8, reference torso and narrow plated neck",
+  "parts": {
+    "ironman_black.stl": {
+      "sha256": "1ca7cd3272231a45d3420e790cc9dd4dafbc19cc22844295ccbaa11a30d3f3fd",
+      "watertight": true,
+      "winding_consistent": true,
+      "components": 13,
+      "volume_mm3": 293.3777
+    },
+    "ironman_body.stl": {
+      "sha256": "0d42793fe2e198d845b89f3f1f99a83028302bb5eebaa8293e9e55da26261e50",
+      "watertight": true,
+      "winding_consistent": true,
+      "components": 1,
+      "volume_mm3": 78776.9773
+    },
+    "ironman_gold.stl": {
+      "sha256": "04925b9129ce25c741f9a6434bf7a50b91439a0022088041eb5ed124750a2730",
+      "watertight": true,
+      "winding_consistent": true,
+      "components": 4,
+      "volume_mm3": 501.0503
+    },
+    "ironman_white.stl": {
+      "sha256": "c9f4475febac1b54dc938f365fc5c4c92acb06ebafdd87f57e20bc4bf4878773",
+      "watertight": true,
+      "winding_consistent": true,
+      "components": 1,
+      "volume_mm3": 127.7646
+    }
+  },
+  "geometry_checks": {
+    "core": {
+      "empty": true,
+      "residual_volume_mm3": 0
+    },
+    "colours": {
+      "empty": false,
+      "residual_volume_mm3": 5.371081594300146e-08
+    },
+    "backing": {
+      "empty": true,
+      "residual_volume_mm3": 0
+    }
+  },
+  "tolerance_mm3": 0.0001,
+  "print_dimensions_mm": [
+    84.0,
+    25.0,
+    95.0
+  ],
+  "source_sha256": {
+    "ironman_v8.scad": "378b3fa3f2792703167f1e778b211269a2198ebd8ef5ae964f3fcf4e04393af0",
+    "xmas_orn_case.scad": "353e4d7a6c33eb5a996bc165edbf55d3b42be81c8400d3dd146988db9215f410"
+  }
+}

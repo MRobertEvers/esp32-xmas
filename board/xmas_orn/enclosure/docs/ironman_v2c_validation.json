@@ -1,0 +1,62 @@
+{
+  "revision": "Iron Man v2c, blue eye lenses and reactor",
+  "parts": {
+    "ironman_black.stl": {
+      "sha256": "8efb0b1ee7e15e93065cfd874e1ff95cfc58531f6f63da4054463abd3bdef50d",
+      "watertight": true,
+      "winding_consistent": true,
+      "components": 4,
+      "volume_mm3": 567.6206
+    },
+    "ironman_body.stl": {
+      "sha256": "2c2c4ae0877e377fedae1aebd4e5e174f6f5ba274e644a3ddb1b0e442bd9de49",
+      "watertight": true,
+      "winding_consistent": true,
+      "components": 1,
+      "volume_mm3": 71342.8248
+    },
+    "ironman_cyan.stl": {
+      "sha256": "5a49b444783b3410c7d140fb315803dde624b139363fec9b9ed81f45a4d97a1a",
+      "watertight": true,
+      "winding_consistent": true,
+      "components": 3,
+      "volume_mm3": 250.5805
+    },
+    "ironman_gold.stl": {
+      "sha256": "419df09bd55f4aa0c300ba09e38eb3a17627de07560b2d0ff5ce714cf822adf3",
+      "watertight": true,
+      "winding_consistent": true,
+      "components": 4,
+      "volume_mm3": 344.7966
+    }
+  },
+  "geometry_checks": {
+    "core": {
+      "empty": true,
+      "residual_volume_mm3": 0
+    },
+    "colours": {
+      "empty": false,
+      "residual_volume_mm3": 6.84679738090684e-08
+    },
+    "backing": {
+      "empty": true,
+      "residual_volume_mm3": 0
+    },
+    "baseline": {
+      "empty": true,
+      "residual_volume_mm3": 0
+    }
+  },
+  "tolerance_mm3": 0.0001,
+  "print_dimensions_mm": [
+    66.0,
+    25.0,
+    90.0
+  ],
+  "source_sha256": {
+    "ironman_v2c.scad": "f11c9cd952a6e609768abc177c5bb98543b12c7f1f13b6fa6d58b78055b60d7a",
+    "xmas_orn_outers_v2.scad": "4044287eec9f45cbab8926a80494a1c9e71b84dfead26d4e1c8dae1a96c52bac",
+    "xmas_orn_case.scad": "353e4d7a6c33eb5a996bc165edbf55d3b42be81c8400d3dd146988db9215f410"
+  }
+}

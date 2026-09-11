@@ -68,6 +68,14 @@ cluster and keep the runs short — that is the point of the star. The
 ornament's J2 jack is DNP by default; populate it on ornaments that will be
 fed from the hub.
 
+## Enclosure
+
+[`enclosure/`](enclosure/) holds a printed two-part box: base with standoffs, lid with
+screw bosses, four M3 x 16 screws from underneath doing double duty as board and lid
+fixings. Notch for the 12 V jack on the left, four wire windows for the arm terminals on
+the right, LED sight holes and vents in the lid. STLs are print-oriented for the A1 mini.
+See [enclosure/README.md](enclosure/README.md).
+
 ## Documents
 
 `docs/` has the rev 1 schematic and the top and bottom layer plots as PDFs,

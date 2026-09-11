@@ -6,6 +6,12 @@ The model, its animation, its textures and toridraw's lookup tables are all bake
 
 Current subject: the Tree Gnome Village spirit tree (dat2 model **2851**) playing `entendseq`, the idle that fades the orbs in its branches.
 
+For experimental relative positioning of four or more ornaments using their
+existing Wi-Fi radios, see the [spatial layout module](components/xmas_spatial/README.md)
+and [standalone firmware demo](examples/spatial_layout/README.md). The module
+implements discovery, FTM ranging and a documented 3D solver without third-party
+libraries; it is opt-in and does not start Wi-Fi in the renderer.
+
 ---
 
 ## Hardware
@@ -60,7 +66,10 @@ KiCad 10 project.
 The routing is a fresh autoroute (Freerouting) that passes DRC with the project
 rules, not a hand layout.
 
-Outputs: `board/xmas_orn/docs/` holds the schematic and layer PDFs;
+Outputs: `board/xmas_orn/docs/` holds the schematic and layer PDFs, a copper/silk
+SVG, and 3D renders of both sides
+([top](board/xmas_orn/docs/xmas_orn_rev2_top.png),
+[bottom](board/xmas_orn/docs/xmas_orn_rev2_bottom.png));
 `board/xmas_orn/production/rev2/` holds the JLCPCB gerber/drill zip, BOM and
 placement file, exported with `kicad-cli` (J2 excluded as DNP). The placement
 rotations are KiCad's raw angles, not the per-package corrections the
@@ -87,6 +96,31 @@ all AliExpress unless noted):
 | AYWHP ESP32-S3 dev boards with WROOM-1-N16R8 | 3 | Amazon 114-8171301-3841008 | 2026-06-04 | Not used; dev boards. Handy for bringing up the N16R8 firmware config before rev 2 boards arrive. |
 | 3.3 V / 5 V / 12 V power supply module | 1 | 8212428463975361 (same package) | 2026-06-15 | Not on the board. |
 
+#### JLCPCB placement gotchas (learned on order W2026090908054344, 2026-09-08)
+
+- **Rotations.** `kicad-cli` writes KiCad's raw footprint angle, but JLCPCB
+  applies that angle to *its own* part model, whose 0° differs per package.
+  On the first rev 2 order the 1×7 socket J1 came out vertical and the
+  WROOM-1 U1 was flipped end-for-end (antenna on the board, shield hanging
+  off the edge). JLCPCB's engineer corrected both before production, and the
+  CPL in `production/rev2/` now carries the JLCPCB-correct angles for those
+  two parts (J1 = 0, U1 = 0). Any new footprint needs the same check.
+- **Always open Order History → DFM Analysis after paying** and tick
+  "Show Components": that view is the engineer-adjusted placement that will
+  actually be built. Verify every polarised part (diodes, LEDs, ICs, the
+  module, connectors) against `docs/xmas_orn_rev2_top.png` before the SMT
+  line starts. "Confirm Parts Placement" at order time makes JLCPCB wait for
+  your sign-off instead.
+- **Through-hole parts must be in the CPL** or JLCPCB skips them: the hub's
+  jack, terminal blocks and bulk cap were missing from the SMD-only export.
+  `xmas_hub/production/JLCPCB_xmas_hub_positions.csv` now lists all 60 parts
+  in the five-column form (Designator, Mid X, Mid Y, Rotation, Layer);
+  JLCPCB's parser rejects quoted fields, so keep footprint names out of it.
+- **Part numbers.** Give JLCPCB LCSC C-numbers, not manufacturer numbers; its
+  matcher fails on hyphenated MPNs. Substitutions made on that order: hub Q1
+  AOD417 → AOD4185 (C400894, out of stock); ornament J1 = C22438157,
+  J3 = C165948, SW1/SW2 = C231329.
+
 #### Sourcing the rest
 
 Everything new on rev 2 now carries an `LCSC Part #` field in the schematic and
@@ -108,6 +142,24 @@ Nothing else on the rev 2 BOM changed from rev 1, so the rev 1 part numbers in
 
 ---
 
+### Enclosure (`board/xmas_orn/enclosure`)
+
+A printed case for the rev 2 board plus its display, done as a **common core** (tray + snap-on
+bezel) that slots into interchangeable **outers**, the default being a rounded hanging sleeve.
+Parametric OpenSCAD, print-oriented STLs for the Bambu Lab A1 mini, and the core envelope /
+groove interface any new outer needs are documented in
+[board/xmas_orn/enclosure/README.md](board/xmas_orn/enclosure/README.md). The barrel jack and
+USB-C are open through both the core and the sleeve.
+Five themed outers (Captain America shield, two Spider-Man variants, Iron Man, Black Widow)
+share the same pocket and export one STL per colour for the AMS lite.
+
+The power hub gets a plainer two-part box, same toolchain, in
+[board/xmas_hub/enclosure/](board/xmas_hub/enclosure/README.md): four M3 screws from below
+clamp the board and the lid together, with a notch for the 12 V jack and windows for the four
+arm terminals.
+
+---
+
 ### Power hub (`board/xmas_hub`)
 
 A second KiCad 10 project: the base-of-tree distribution board for the rev 2
@@ -119,6 +171,28 @@ topology without a buck on every ornament. Design notes, BOM with LCSC numbers,
 cable guidance and the generator scripts are in
 [`board/xmas_hub/README.md`](board/xmas_hub/README.md); JLCPCB outputs in
 `board/xmas_hub/production/`.
+
+## Software used
+
+| Area | Tool | Version / where | Used for |
+|------|------|-----------------|----------|
+| Firmware | [ESP-IDF](https://docs.espressif.com/projects/esp-idf/) | v5.1+ | `idf.py` build, flash, monitor; CMake drives the bake generators |
+| Firmware | Host C compiler | any `gcc` on `PATH` (`HOST_CC` overrides) | Builds `tools/bake_model` and `tools/extract_model`, which run at build time |
+| Firmware | PowerShell | `scripts/*.ps1` | The three build-time generators (`bake-model`, `gen-const-tables`, `extract-model`) |
+| Firmware | [toridraw / rscache](https://github.com/MRobertEvers/oldschool-clientc) | submodule pin in `3rd/` | Software rasteriser and OSRS cache readers |
+| Board | [KiCad](https://www.kicad.org/) | 10.0.6 | `board/xmas_orn` and `board/xmas_hub` schematics and layouts |
+| Board | `kicad-cli` | ships with KiCad | ERC/DRC, netlist, BOM, position file, gerber/drill export, PDF/SVG/PNG renders in `docs/` |
+| Board | KiCad's bundled Python (`pcbnew`) | inside the KiCad app bundle | `board/xmas_hub/scripts/gen_sch.py` / `gen_pcb.py` generate that board programmatically |
+| Board | [Freerouting](https://github.com/freerouting/freerouting) | | Autorouting; both boards are fresh autoroutes that pass the project DRC |
+| Board | [Fabrication Toolkit](https://github.com/bennymeg/Fabrication-Toolkit) | KiCad plugin, `fabrication-toolkit-options.json` | Rev 1 JLCPCB outputs under `production/`; rev 2 used `kicad-cli` directly |
+| Enclosure | [OpenSCAD](https://openscad.org/) | 2026.09 snapshot, `brew install --cask openscad@snapshot` | `board/xmas_orn/enclosure/xmas_orn_case.scad`; `export.sh` renders the STLs and the `check_*` parts prove the fit |
+| Enclosure | [trimesh](https://trimesh.org/) (optional) | `pip install trimesh numpy networkx` | Watertightness and overlap-volume checks on the exported meshes |
+| Enclosure | [Bambu Studio](https://bambulab.com/en/download/studio) | | Slicing for the Bambu Lab A1 mini; the STLs are already print-oriented |
+
+On macOS the stable `openscad` cask is disabled (Gatekeeper); use the snapshot cask. KiCad's
+`kicad-cli` and Python live at `/Applications/KiCad/KiCad.app/Contents/MacOS/kicad-cli` and
+`.../Contents/Frameworks/Python.framework/Versions/Current/bin/python3`. `qlmanage -t` is a
+handy stand-in for `pdftoppm` when previewing the exported PDFs.
 
 ## Prerequisites
 

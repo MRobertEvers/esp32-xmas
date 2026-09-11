@@ -1,0 +1,407 @@
+[
+  {
+    "original": "README_ironman_v10.md",
+    "archived": "failures/README_ironman_v10.md",
+    "sha256": "93ca22c3a95a06179917bb387eff83ca9c50ba10956ac8f5861cde6636b6b93f"
+  },
+  {
+    "original": "README_ironman_v3.md",
+    "archived": "failures/README_ironman_v3.md",
+    "sha256": "9c7d7a2686c1112b0e972d9fd761f35f3c5603332bdbb8b8dcd04e678ee4616f"
+  },
+  {
+    "original": "README_ironman_v4.md",
+    "archived": "failures/README_ironman_v4.md",
+    "sha256": "c58744f41636b47e3dd675c0af6c40b2bfa442bcae7f05879e6f69f67c8732e7"
+  },
+  {
+    "original": "README_ironman_v5.md",
+    "archived": "failures/README_ironman_v5.md",
+    "sha256": "bc2312f80cdecdd00fa415245a180bee869cd57e49eff7e62c9e150d24411258"
+  },
+  {
+    "original": "README_ironman_v6.md",
+    "archived": "failures/README_ironman_v6.md",
+    "sha256": "59af38c34626c436fb5041bfddac6c865ee796bd1621e70d768fb32d5798a0cc"
+  },
+  {
+    "original": "README_ironman_v7.md",
+    "archived": "failures/README_ironman_v7.md",
+    "sha256": "d2f405a52383c8631ed31c0113e952dcb4c0b469c69c67e14eb476b03e2e28fa"
+  },
+  {
+    "original": "README_ironman_v8.md",
+    "archived": "failures/README_ironman_v8.md",
+    "sha256": "757498f28050c8b48de48d968f3bd3399d271c74d1aaece97a82fa864e64f1cd"
+  },
+  {
+    "original": "README_ironman_v9.md",
+    "archived": "failures/README_ironman_v9.md",
+    "sha256": "78afa2ba2f20ea039ea27cb47d8af178bab3be5d71fd1d87517963abe147355e"
+  },
+  {
+    "original": "docs/ironman_v10_front.png",
+    "archived": "failures/docs/ironman_v10_front.png",
+    "sha256": "610d2573eb38344894c3a4d8d135645f917cbf46a895fec73f3313b9b164a951"
+  },
+  {
+    "original": "docs/ironman_v10_iso.png",
+    "archived": "failures/docs/ironman_v10_iso.png",
+    "sha256": "e81023e55f66ba932d7af9b80256074fdfaac8313b59c0ffeba4de0007809552"
+  },
+  {
+    "original": "docs/ironman_v10_validation.json",
+    "archived": "failures/docs/ironman_v10_validation.json",
+    "sha256": "4b01501dfe2d6a58794c64eadd613b353436e2eb26ba884bf7ce28682408f9de"
+  },
+  {
+    "original": "docs/ironman_v3_front.png",
+    "archived": "failures/docs/ironman_v3_front.png",
+    "sha256": "afea98498de2557c85a5b34693273fc46436bc6dbd81350833657c6bc7e4edb6"
+  },
+  {
+    "original": "docs/ironman_v3_iso.png",
+    "archived": "failures/docs/ironman_v3_iso.png",
+    "sha256": "b10096e7adef850ea77370d7e2bb096a25d8bb98df0159d9b0b993146c73056c"
+  },
+  {
+    "original": "docs/ironman_v3_validation.json",
+    "archived": "failures/docs/ironman_v3_validation.json",
+    "sha256": "b7bdd50487bdbec6973c2af762f3fff1af84cbd832df953586f0000daa12eecd"
+  },
+  {
+    "original": "docs/ironman_v4_front.png",
+    "archived": "failures/docs/ironman_v4_front.png",
+    "sha256": "a4f3706bf39248c79b4804565548f34900126df42d0eb62265bc6dccdb077a4c"
+  },
+  {
+    "original": "docs/ironman_v4_iso.png",
+    "archived": "failures/docs/ironman_v4_iso.png",
+    "sha256": "664f6a1e8727f46c15366abc191358359f05c514bdd00ed83ae50d450debba68"
+  },
+  {
+    "original": "docs/ironman_v4_validation.json",
+    "archived": "failures/docs/ironman_v4_validation.json",
+    "sha256": "4e9b3192ece5461cc7196ef56a2e38ebb33fce41f9a5bea3da49f3ae9ce30666"
+  },
+  {
+    "original": "docs/ironman_v5_front.png",
+    "archived": "failures/docs/ironman_v5_front.png",
+    "sha256": "727621d724db1a624fa8e5378173737464310eb0209027afe15918b0822bad48"
+  },
+  {
+    "original": "docs/ironman_v5_iso.png",
+    "archived": "failures/docs/ironman_v5_iso.png",
+    "sha256": "bc2bf0f97163526fddf8ad2794959e4eaf6ddb8f9e043d0c9165e27afa4ac093"
+  },
+  {
+    "original": "docs/ironman_v5_validation.json",
+    "archived": "failures/docs/ironman_v5_validation.json",
+    "sha256": "b6a57773d9bc9e56b2b2d0e23d1dc8177877b907d8ec08531e7b4f860b197d3c"
+  },
+  {
+    "original": "docs/ironman_v6_front.png",
+    "archived": "failures/docs/ironman_v6_front.png",
+    "sha256": "bcfb29ba7a204ca5b53f9860a530835db262f2902d5500cc1d7358a48dc0bc92"
+  },
+  {
+    "original": "docs/ironman_v6_iso.png",
+    "archived": "failures/docs/ironman_v6_iso.png",
+    "sha256": "4f90d21be24f6319a1bb0efe99a67444f73f26804e5ab08e06fdb82fe497f9e0"
+  },
+  {
+    "original": "docs/ironman_v6_validation.json",
+    "archived": "failures/docs/ironman_v6_validation.json",
+    "sha256": "5705ed4acc721a1aa3fe2efce4e5b8d97354d3b4db27ab73ed7924902b636fb2"
+  },
+  {
+    "original": "docs/ironman_v7_front.png",
+    "archived": "failures/docs/ironman_v7_front.png",
+    "sha256": "4bdc510aa17e5dda9b5e26620a891bb15e8d4f7bbffa4e8fc3c163b87ff11771"
+  },
+  {
+    "original": "docs/ironman_v7_iso.png",
+    "archived": "failures/docs/ironman_v7_iso.png",
+    "sha256": "ed3483ee2134fafa7706657be7f82aa140dc01980f899246107243b14dfc4699"
+  },
+  {
+    "original": "docs/ironman_v7_validation.json",
+    "archived": "failures/docs/ironman_v7_validation.json",
+    "sha256": "c73bb67b04898123d7da992c81c1ea6471bf08ffbbf7aa46f475434c69d12478"
+  },
+  {
+    "original": "docs/ironman_v8_front.png",
+    "archived": "failures/docs/ironman_v8_front.png",
+    "sha256": "9e0773f07da7caa0ea79a4cae6ccd2c5f5edce2897c264bc07f4a41377056a7f"
+  },
+  {
+    "original": "docs/ironman_v8_iso.png",
+    "archived": "failures/docs/ironman_v8_iso.png",
+    "sha256": "9b411d9a83a77e1b96ec4dc138bd7afe90791489209b4c6ea23e14854b19e02b"
+  },
+  {
+    "original": "docs/ironman_v8_validation.json",
+    "archived": "failures/docs/ironman_v8_validation.json",
+    "sha256": "566be0d23e3ae7576bb915253dddc10bc74dee11694ee2e5d03ccadf6805fa11"
+  },
+  {
+    "original": "docs/ironman_v9_front.png",
+    "archived": "failures/docs/ironman_v9_front.png",
+    "sha256": "bec4dfb032968aac51b0f60eefc25e17c79ec1c425267692e416eab9c15bdb9b"
+  },
+  {
+    "original": "docs/ironman_v9_iso.png",
+    "archived": "failures/docs/ironman_v9_iso.png",
+    "sha256": "50b5873e06b7e5eecd9148eaaf0e15fd8199c6884f1265f5f90efb99567f2fa3"
+  },
+  {
+    "original": "docs/ironman_v9_validation.json",
+    "archived": "failures/docs/ironman_v9_validation.json",
+    "sha256": "e617074f4af3d27962391d325565d2a5259a037623a6f057d0f1aab00356ee4e"
+  },
+  {
+    "original": "export_ironman_v10.sh",
+    "archived": "failures/export_ironman_v10.sh",
+    "sha256": "979ee9b1007ba7cda5ad3271f74ce295b4c6218201c612f8393c7b55758b97bc"
+  },
+  {
+    "original": "export_ironman_v3.sh",
+    "archived": "failures/export_ironman_v3.sh",
+    "sha256": "3c48a3909c3d92763def7e877cdf284add9b051eaa1b57e651fc08fe6ddb7dda"
+  },
+  {
+    "original": "export_ironman_v4.sh",
+    "archived": "failures/export_ironman_v4.sh",
+    "sha256": "3b870d1245e138e5bc809b5496386965fd032e743f19ddf47086cb47bc119043"
+  },
+  {
+    "original": "export_ironman_v5.sh",
+    "archived": "failures/export_ironman_v5.sh",
+    "sha256": "d428effb6f579c9ddb892dd02f75dc40088afc62c1e9473e3a4898762f2245cb"
+  },
+  {
+    "original": "export_ironman_v6.sh",
+    "archived": "failures/export_ironman_v6.sh",
+    "sha256": "55fa6177949b8056bec6dee0616e35aa6fb5b0cba393b327918ec3d5284d4c73"
+  },
+  {
+    "original": "export_ironman_v7.sh",
+    "archived": "failures/export_ironman_v7.sh",
+    "sha256": "604dd6c762efcbbb8b4a5264bbb784a95ec7bdaadb87521ac240b239910e5af4"
+  },
+  {
+    "original": "export_ironman_v8.sh",
+    "archived": "failures/export_ironman_v8.sh",
+    "sha256": "58bf5e5bc23b7833eb98e6a2ae59dd21a3da8eea6b17790ddf96698155ff1cda"
+  },
+  {
+    "original": "export_ironman_v9.sh",
+    "archived": "failures/export_ironman_v9.sh",
+    "sha256": "ba3b73262733ea2f40c6ea51d4a361257e6f1aaeddd41f01999e210a85e481bd"
+  },
+  {
+    "original": "ironman_reference_art.scad",
+    "archived": "failures/ironman_reference_art.scad",
+    "sha256": "2af425b2355f7736cee8f072585dd0ccdacb49611dc4c2e9d3418776240daec6"
+  },
+  {
+    "original": "ironman_v10.scad",
+    "archived": "failures/ironman_v10.scad",
+    "sha256": "9bbfa0c46eea8516802a21cfd366a17fc91eb96b322688982a089a598064478c"
+  },
+  {
+    "original": "ironman_v3.scad",
+    "archived": "failures/ironman_v3.scad",
+    "sha256": "93983b7aeb9ecbdf62feb399e91a0d72e8f64600df632e2b7f453e0bcaf4a44e"
+  },
+  {
+    "original": "ironman_v4.scad",
+    "archived": "failures/ironman_v4.scad",
+    "sha256": "48cba3bbd4c448a8d4b0d8b280dcecc1c43ab4951f1ae5ca3eb13293e0394e46"
+  },
+  {
+    "original": "ironman_v5.scad",
+    "archived": "failures/ironman_v5.scad",
+    "sha256": "8300eb90e476105c9dc1c58c909904a7340fc5dd48880c0f454ceb3da03f5237"
+  },
+  {
+    "original": "ironman_v6.scad",
+    "archived": "failures/ironman_v6.scad",
+    "sha256": "2f5f102439beba3717e7c0713c494c0d221b0a040ccd9bf57827c0c28b6cdb25"
+  },
+  {
+    "original": "ironman_v7.scad",
+    "archived": "failures/ironman_v7.scad",
+    "sha256": "b90252f3a27ac2bc3dcbf834e769a1591146eaef0206e19e7b23561a4d2dbf49"
+  },
+  {
+    "original": "ironman_v8.scad",
+    "archived": "failures/ironman_v8.scad",
+    "sha256": "378b3fa3f2792703167f1e778b211269a2198ebd8ef5ae964f3fcf4e04393af0"
+  },
+  {
+    "original": "ironman_v9.scad",
+    "archived": "failures/ironman_v9.scad",
+    "sha256": "12480fd30ddb624a51138220f9d658266535b109b628cec09330d02252f1deb1"
+  },
+  {
+    "original": "stl/ironman_v10/ironman_black.stl",
+    "archived": "failures/stl/ironman_v10/ironman_black.stl",
+    "sha256": "8483abd3d78e7abc73b9de503bcd8f8c80e9e2ff880d303827e22a9b8de1d84e"
+  },
+  {
+    "original": "stl/ironman_v10/ironman_body.stl",
+    "archived": "failures/stl/ironman_v10/ironman_body.stl",
+    "sha256": "dd058a251a0c99198eabbef4778a525c55e82da7d617332cf2db03ddd6202804"
+  },
+  {
+    "original": "stl/ironman_v10/ironman_gold.stl",
+    "archived": "failures/stl/ironman_v10/ironman_gold.stl",
+    "sha256": "fb3a51bded917cd02438023d25703e640a01934aca9345473affc5e0bcc8e0af"
+  },
+  {
+    "original": "stl/ironman_v10/ironman_white.stl",
+    "archived": "failures/stl/ironman_v10/ironman_white.stl",
+    "sha256": "1d8dfbb4d2694d0cf3561583931e59e733534850b65f5a28d2296d7da1d95339"
+  },
+  {
+    "original": "stl/ironman_v3/ironman_black.stl",
+    "archived": "failures/stl/ironman_v3/ironman_black.stl",
+    "sha256": "829aecddbd454c9e357e225193c06a811aac28c16cdf2bb030269f4b1980b73b"
+  },
+  {
+    "original": "stl/ironman_v3/ironman_body.stl",
+    "archived": "failures/stl/ironman_v3/ironman_body.stl",
+    "sha256": "ea57e55aee730562c78a9e4f05dc1382520229093227399ad15dc1e1f7b47012"
+  },
+  {
+    "original": "stl/ironman_v3/ironman_gold.stl",
+    "archived": "failures/stl/ironman_v3/ironman_gold.stl",
+    "sha256": "f103f53c2cd71c172e3f151d87b5af1e85d8e0c1af972ff3d49b41edc8ca7ac1"
+  },
+  {
+    "original": "stl/ironman_v3/ironman_white.stl",
+    "archived": "failures/stl/ironman_v3/ironman_white.stl",
+    "sha256": "733cf113d59db3d009d16d487d8da654e8de2b969b2020ea7139c13b925c7077"
+  },
+  {
+    "original": "stl/ironman_v4/ironman_black.stl",
+    "archived": "failures/stl/ironman_v4/ironman_black.stl",
+    "sha256": "c93351e66562790468511a38eb0c7eb4a7b6a68017072a71b50f013ab5c497a3"
+  },
+  {
+    "original": "stl/ironman_v4/ironman_body.stl",
+    "archived": "failures/stl/ironman_v4/ironman_body.stl",
+    "sha256": "221c0c2521215272b2b3199cacef5dec916c966a788c27f46fd4071a9837759b"
+  },
+  {
+    "original": "stl/ironman_v4/ironman_gold.stl",
+    "archived": "failures/stl/ironman_v4/ironman_gold.stl",
+    "sha256": "67c501c195b8a1aa755b607c84a99c430859be7ee4338e6bee316f31884e3ae4"
+  },
+  {
+    "original": "stl/ironman_v4/ironman_white.stl",
+    "archived": "failures/stl/ironman_v4/ironman_white.stl",
+    "sha256": "88f4194316a05019ef0b3501bba5813755501dd45558c1dc6884780e46bc21be"
+  },
+  {
+    "original": "stl/ironman_v5/ironman_black.stl",
+    "archived": "failures/stl/ironman_v5/ironman_black.stl",
+    "sha256": "fb4d6156de52aa898d11b6b59f4ec1986ecafb1b6dcbc0894bbc8bd1430923c8"
+  },
+  {
+    "original": "stl/ironman_v5/ironman_body.stl",
+    "archived": "failures/stl/ironman_v5/ironman_body.stl",
+    "sha256": "7ef0808841bd1bdbe60bf4d5c2fa6b5b58f0e69ba4d48d66d937cc46b4231041"
+  },
+  {
+    "original": "stl/ironman_v5/ironman_gold.stl",
+    "archived": "failures/stl/ironman_v5/ironman_gold.stl",
+    "sha256": "67abe777072290200e3f5db9df53d0436314bdb747d114c07c143f15091217f0"
+  },
+  {
+    "original": "stl/ironman_v5/ironman_white.stl",
+    "archived": "failures/stl/ironman_v5/ironman_white.stl",
+    "sha256": "acb6386bacb19898d8ed826645c703fe7e74d0af3b954f6cb8e8d85693758aa9"
+  },
+  {
+    "original": "stl/ironman_v6/ironman_black.stl",
+    "archived": "failures/stl/ironman_v6/ironman_black.stl",
+    "sha256": "1dde336a41dcbcede1a109c16f8891de1f4d0d01b99919aae5a7aeda9d28556e"
+  },
+  {
+    "original": "stl/ironman_v6/ironman_body.stl",
+    "archived": "failures/stl/ironman_v6/ironman_body.stl",
+    "sha256": "d7b13bce957e0fa93df958a361f1f1054bf266948a0fcb8d3922dbfeb211aa03"
+  },
+  {
+    "original": "stl/ironman_v6/ironman_cyan.stl",
+    "archived": "failures/stl/ironman_v6/ironman_cyan.stl",
+    "sha256": "c230ac92db4880ff170e87620a3f533825571c76779febc99b43e21c26c8a010"
+  },
+  {
+    "original": "stl/ironman_v6/ironman_gold.stl",
+    "archived": "failures/stl/ironman_v6/ironman_gold.stl",
+    "sha256": "170f8fe1b5ff5bfcb0b57581c2f1628d2b1f511c9f726697ed12f70252b32ce2"
+  },
+  {
+    "original": "stl/ironman_v7/ironman_black.stl",
+    "archived": "failures/stl/ironman_v7/ironman_black.stl",
+    "sha256": "e8c3dba26e37c71a739ab141de1ed77bc92d0cc932e9850e484e8d4f32293623"
+  },
+  {
+    "original": "stl/ironman_v7/ironman_body.stl",
+    "archived": "failures/stl/ironman_v7/ironman_body.stl",
+    "sha256": "c8c4887ecf51682cc3eeddd42bcfce31b149d846477e4f1270c3b268c28bff8d"
+  },
+  {
+    "original": "stl/ironman_v7/ironman_gold.stl",
+    "archived": "failures/stl/ironman_v7/ironman_gold.stl",
+    "sha256": "8d1a1d7e68dba49dcbf6bcedda8a366eb065064d9de6f21f869feabd2ac87a4c"
+  },
+  {
+    "original": "stl/ironman_v7/ironman_white.stl",
+    "archived": "failures/stl/ironman_v7/ironman_white.stl",
+    "sha256": "dd1ef365bc397d9a7a1d60e33c88339702b26a6e8c394ea00ec81cab9ef26793"
+  },
+  {
+    "original": "stl/ironman_v8/ironman_black.stl",
+    "archived": "failures/stl/ironman_v8/ironman_black.stl",
+    "sha256": "1ca7cd3272231a45d3420e790cc9dd4dafbc19cc22844295ccbaa11a30d3f3fd"
+  },
+  {
+    "original": "stl/ironman_v8/ironman_body.stl",
+    "archived": "failures/stl/ironman_v8/ironman_body.stl",
+    "sha256": "0d42793fe2e198d845b89f3f1f99a83028302bb5eebaa8293e9e55da26261e50"
+  },
+  {
+    "original": "stl/ironman_v8/ironman_gold.stl",
+    "archived": "failures/stl/ironman_v8/ironman_gold.stl",
+    "sha256": "04925b9129ce25c741f9a6434bf7a50b91439a0022088041eb5ed124750a2730"
+  },
+  {
+    "original": "stl/ironman_v8/ironman_white.stl",
+    "archived": "failures/stl/ironman_v8/ironman_white.stl",
+    "sha256": "c9f4475febac1b54dc938f365fc5c4c92acb06ebafdd87f57e20bc4bf4878773"
+  },
+  {
+    "original": "stl/ironman_v9/ironman_black.stl",
+    "archived": "failures/stl/ironman_v9/ironman_black.stl",
+    "sha256": "026f1956b0530a46831fd99ce7ec793e9eb6a4f06b000d2969dfa702b47a87e7"
+  },
+  {
+    "original": "stl/ironman_v9/ironman_body.stl",
+    "archived": "failures/stl/ironman_v9/ironman_body.stl",
+    "sha256": "51bd1891401f800b813df998640760b9fff67061e0691e2cc113b975d1072fa1"
+  },
+  {
+    "original": "stl/ironman_v9/ironman_gold.stl",
+    "archived": "failures/stl/ironman_v9/ironman_gold.stl",
+    "sha256": "745d9c57177667765217f62fbe73e854f715bfeff0438c7a8e6c5661387b8ef1"
+  },
+  {
+    "original": "stl/ironman_v9/ironman_white.stl",
+    "archived": "failures/stl/ironman_v9/ironman_white.stl",
+    "sha256": "c9f4475febac1b54dc938f365fc5c4c92acb06ebafdd87f57e20bc4bf4878773"
+  }
+]

@@ -1,0 +1,241 @@
+{
+  "openscad": "OpenSCAD version 2026.09.06",
+  "volume_tolerance_mm3": 0.0001,
+  "themes": {
+    "cap": {
+      "parts": {
+        "body": {
+          "sha256": "a383665fddd0a1474cefde95271fd6bef96b25ca169f52433f1f9e8e130b567d",
+          "watertight": true,
+          "winding_consistent": true,
+          "components": 1,
+          "volume_mm3": 104448.3008
+        },
+        "white": {
+          "sha256": "17572f809cd94f49058acb8fa423baf15f72cd59efc979cf0b0bed1b9df439d9",
+          "watertight": true,
+          "winding_consistent": true,
+          "components": 2,
+          "volume_mm3": 1020.8568
+        },
+        "blue": {
+          "sha256": "964f41575ec372c98a3d4636c84a1aeb15374b2cfa5a2a22141cbb31881a53bb",
+          "watertight": true,
+          "winding_consistent": true,
+          "components": 1,
+          "volume_mm3": 1461.8493
+        }
+      },
+      "print_dimensions_mm": [
+        92.0,
+        25.0,
+        93.0
+      ],
+      "core": {
+        "empty": true,
+        "residual_volume_mm3": 0
+      },
+      "colours": {
+        "empty": false,
+        "residual_volume_mm3": 1.2126596023639044e-11
+      },
+      "backing": {
+        "empty": true,
+        "residual_volume_mm3": 0
+      }
+    },
+    "spidey_nwh": {
+      "parts": {
+        "body": {
+          "sha256": "fe6550bc40749f8907a93d13b367888d3d01dfbbe335a7384fd125954756a624",
+          "watertight": true,
+          "winding_consistent": true,
+          "components": 1,
+          "volume_mm3": 71301.8472
+        },
+        "black": {
+          "sha256": "ad4ed7b62bacbba3ae7aa7d511969f0977bc76590693903239c7d3399930dcd4",
+          "watertight": true,
+          "winding_consistent": true,
+          "components": 14,
+          "volume_mm3": 1507.17
+        },
+        "gold": {
+          "sha256": "08c2b05854416d6e490098d22f4d8bbde3d95a80200535e26b1e38b16373b311",
+          "watertight": true,
+          "winding_consistent": true,
+          "components": 3,
+          "volume_mm3": 214.9001
+        },
+        "white": {
+          "sha256": "0fd190cc64abd370daa5eb05ba401562946638fa33b35830c307ec70de3e88eb",
+          "watertight": true,
+          "winding_consistent": true,
+          "components": 2,
+          "volume_mm3": 221.6782
+        }
+      },
+      "print_dimensions_mm": [
+        67.998,
+        25.0,
+        91.0
+      ],
+      "core": {
+        "empty": true,
+        "residual_volume_mm3": 0
+      },
+      "colours": {
+        "empty": false,
+        "residual_volume_mm3": 7.770965263868372e-08
+      },
+      "backing": {
+        "empty": false,
+        "residual_volume_mm3": 2.8836192692930734e-13
+      }
+    },
+    "ironman": {
+      "parts": {
+        "body": {
+          "sha256": "b1185fb146d21008694e8e098baf09e329ae6e9d3f752c119045fdd43251c378",
+          "watertight": true,
+          "winding_consistent": true,
+          "components": 1,
+          "volume_mm3": 70605.8166
+        },
+        "gold": {
+          "sha256": "cf52a8a5675b78710cfbc91a8e8786df0d9cd489eeec6bd2486d19e59e8a3e1c",
+          "watertight": true,
+          "winding_consistent": true,
+          "components": 1,
+          "volume_mm3": 1435.8888
+        },
+        "black": {
+          "sha256": "793f7f99f4282ca5de3577686420d23491d4cca2d2b2f995e9b2b73813baefc1",
+          "watertight": true,
+          "winding_consistent": true,
+          "components": 9,
+          "volume_mm3": 360.1171
+        },
+        "white": {
+          "sha256": "8a6926d4de25a0030bb798b21e19024b7945ccd1cb8b9ff5a26d66ebc29f9628",
+          "watertight": true,
+          "winding_consistent": true,
+          "components": 2,
+          "volume_mm3": 103.9999
+        }
+      },
+      "print_dimensions_mm": [
+        66.0,
+        25.0,
+        90.0
+      ],
+      "core": {
+        "empty": true,
+        "residual_volume_mm3": 0
+      },
+      "colours": {
+        "empty": false,
+        "residual_volume_mm3": 1.2793558804939191e-09
+      },
+      "backing": {
+        "empty": true,
+        "residual_volume_mm3": 0
+      }
+    },
+    "widow": {
+      "parts": {
+        "body": {
+          "sha256": "45e08e686515aa879356b4f16788cf870e24998af62702d163c7fc7965a4bb0a",
+          "watertight": true,
+          "winding_consistent": true,
+          "components": 1,
+          "volume_mm3": 77036.8816
+        },
+        "silver": {
+          "sha256": "883f69b3f5e07eaabbcf0b7ca4be1cc6cd83e46d909c460050064f6c22e4fbe7",
+          "watertight": true,
+          "winding_consistent": true,
+          "components": 9,
+          "volume_mm3": 483.6298
+        },
+        "red": {
+          "sha256": "1be2487c46b0b51a37fd834cfdc869dd8c71dc7d538135a016b5bd2d272d2b8d",
+          "watertight": true,
+          "winding_consistent": true,
+          "components": 6,
+          "volume_mm3": 397.8387
+        }
+      },
+      "print_dimensions_mm": [
+        70.0,
+        25.0,
+        91.0
+      ],
+      "core": {
+        "empty": true,
+        "residual_volume_mm3": 0
+      },
+      "colours": {
+        "empty": false,
+        "residual_volume_mm3": 4.172822324714313e-08
+      },
+      "backing": {
+        "empty": true,
+        "residual_volume_mm3": 0
+      }
+    },
+    "spidey_classic": {
+      "parts": {
+        "body": {
+          "sha256": "de103ee37aa05d3f1f2f67c52fe932e7dd993595635ab2939bb8bdb067b0b07e",
+          "watertight": true,
+          "winding_consistent": true,
+          "components": 1,
+          "volume_mm3": 78748.7699
+        },
+        "blue": {
+          "sha256": "bd421e55051264c9e5dd5fa5fb46228e89f53b99dc46d976b140b875202f6477",
+          "watertight": true,
+          "winding_consistent": true,
+          "components": 2,
+          "volume_mm3": 1157.7813
+        },
+        "black": {
+          "sha256": "f493077e3abc0747d4413bc0ecd2d3420199436f37f3702efb9b74a09e8e2f10",
+          "watertight": true,
+          "winding_consistent": true,
+          "components": 7,
+          "volume_mm3": 796.4117
+        },
+        "white": {
+          "sha256": "078d0fc3db63dc9adef3b36a353b77feba5a8605b6eaa9b7c596bd18dc1f37fd",
+          "watertight": true,
+          "winding_consistent": true,
+          "components": 2,
+          "volume_mm3": 316.8565
+        }
+      },
+      "print_dimensions_mm": [
+        71.999,
+        25.0,
+        91.0
+      ],
+      "core": {
+        "empty": true,
+        "residual_volume_mm3": 0
+      },
+      "colours": {
+        "empty": false,
+        "residual_volume_mm3": 6.410118658095598e-09
+      },
+      "backing": {
+        "empty": false,
+        "residual_volume_mm3": 1.1179205709292244e-12
+      }
+    }
+  },
+  "source_sha256": {
+    "xmas_orn_case.scad": "353e4d7a6c33eb5a996bc165edbf55d3b42be81c8400d3dd146988db9215f410",
+    "xmas_orn_outers_v2.scad": "4044287eec9f45cbab8926a80494a1c9e71b84dfead26d4e1c8dae1a96c52bac"
+  }
+}

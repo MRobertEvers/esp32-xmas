@@ -1,0 +1,178 @@
+{
+  "openscad": "OpenSCAD version 2026.09.06",
+  "volume_tolerance_mm3": 0.0001,
+  "themes": {
+    "trapezoid_armor": {
+      "parts": {
+        "body": {
+          "sha256": "45312806c80f1874241451428ac332adb4a6edb530b3b923a28dbfeb37697f34",
+          "watertight": true,
+          "winding_consistent": true,
+          "components": 1,
+          "volume_mm3": 107356.8383
+        },
+        "gold": {
+          "sha256": "91bbd61b717f3981c229d2df07a74e22efedbd1366be841939b646329c041098",
+          "watertight": true,
+          "winding_consistent": true,
+          "components": 7,
+          "volume_mm3": 1367.3379
+        },
+        "black": {
+          "sha256": "8ee7d08a1c763b3c4794336bfbf905f36256337f456ebb1bcda4b57a4e7b4ccc",
+          "watertight": true,
+          "winding_consistent": true,
+          "components": 7,
+          "volume_mm3": 1223.6601
+        },
+        "cyan": {
+          "sha256": "c6ab7c316d6e0cae027720292be2e24da40745d8b1cdba0bc8417412e77e3a46",
+          "watertight": true,
+          "winding_consistent": true,
+          "components": 1,
+          "volume_mm3": 280.862
+        }
+      },
+      "print_dimensions_mm": [
+        92.0,
+        25.8,
+        92.0
+      ],
+      "geometry_checks": {
+        "core": {
+          "empty": true,
+          "residual_volume_mm3": 0
+        },
+        "colours": {
+          "empty": false,
+          "residual_volume_mm3": 1.2291275197640061e-07
+        },
+        "backing": {
+          "empty": true,
+          "residual_volume_mm3": 0
+        },
+        "window": {
+          "empty": true,
+          "residual_volume_mm3": 0
+        }
+      }
+    },
+    "stark_core": {
+      "parts": {
+        "body": {
+          "sha256": "545e97ed750c4172065d48e8bcd4b3d1e07834be59ed2c4fcc1508e3b0e499e0",
+          "watertight": true,
+          "winding_consistent": true,
+          "components": 1,
+          "volume_mm3": 82260.6486
+        },
+        "gold": {
+          "sha256": "c2c937679dfc002e57c4457d9f6fedd183d9de0efda07d44dc5f3c22bef15458",
+          "watertight": true,
+          "winding_consistent": true,
+          "components": 3,
+          "volume_mm3": 411.5336
+        },
+        "black": {
+          "sha256": "03aa554b4d4ac68912133f8320e6556df3d6dfdf6994523ece31af342e520da2",
+          "watertight": true,
+          "winding_consistent": true,
+          "components": 2,
+          "volume_mm3": 1259.3602
+        },
+        "cyan": {
+          "sha256": "a21d4725960d17732edcb5d798d33af3fae47470c72d28c38eb9d6c908b04958",
+          "watertight": true,
+          "winding_consistent": true,
+          "components": 9,
+          "volume_mm3": 219.6922
+        }
+      },
+      "print_dimensions_mm": [
+        58.0,
+        26.0,
+        99.0
+      ],
+      "geometry_checks": {
+        "core": {
+          "empty": true,
+          "residual_volume_mm3": 0
+        },
+        "colours": {
+          "empty": false,
+          "residual_volume_mm3": 3.675874419665585e-12
+        },
+        "backing": {
+          "empty": true,
+          "residual_volume_mm3": 0
+        },
+        "window": {
+          "empty": true,
+          "residual_volume_mm3": 0
+        }
+      }
+    },
+    "reactor_medallion": {
+      "parts": {
+        "body": {
+          "sha256": "291b065a3e7e7651055e06f191b812c6e9e22995e13882a7fd84fd76f9fec447",
+          "watertight": true,
+          "winding_consistent": true,
+          "components": 1,
+          "volume_mm3": 95319.661
+        },
+        "gold": {
+          "sha256": "4152a5f6ea7e21a5fbe74e3ae76e9d60c05e7b7216cdc86e7e8da2332dbe4819",
+          "watertight": true,
+          "winding_consistent": true,
+          "components": 6,
+          "volume_mm3": 1077.2893
+        },
+        "black": {
+          "sha256": "39af39c5b05386906943b346ce63a1aee1b6f7fa9dad5927cb14ad5fe3519969",
+          "watertight": true,
+          "winding_consistent": true,
+          "components": 1,
+          "volume_mm3": 2295.9981
+        },
+        "cyan": {
+          "sha256": "b73339fde0be4604e09becc08faf40647b26064b4258a12cfb74b149e3cca6aa",
+          "watertight": true,
+          "winding_consistent": true,
+          "components": 18,
+          "volume_mm3": 708.7303
+        }
+      },
+      "print_dimensions_mm": [
+        90.0,
+        25.8,
+        93.0
+      ],
+      "geometry_checks": {
+        "core": {
+          "empty": true,
+          "residual_volume_mm3": 0
+        },
+        "colours": {
+          "empty": false,
+          "residual_volume_mm3": 9.701276818911234e-12
+        },
+        "backing": {
+          "empty": true,
+          "residual_volume_mm3": 0
+        },
+        "window": {
+          "empty": true,
+          "residual_volume_mm3": 0
+        }
+      }
+    }
+  },
+  "source_sha256": {
+    "xmas_orn_case.scad": "353e4d7a6c33eb5a996bc165edbf55d3b42be81c8400d3dd146988db9215f410",
+    "ironman_selected_parts.scad": "0e41e14e5968290bff0906a3df0cbecc631f3c7e21cc0ae71a0509f6969531af",
+    "ironman_trapezoid_armor.scad": "8cc8488990cd63f9a0ee7e2c0fb13d48299787c1a24f832ae3e86b336f189c2a",
+    "ironman_stark_core.scad": "eb69d68a94da7bb966c269d5a02b555b56ee627cdcebc45b974c5558d7c3feef",
+    "ironman_reactor_medallion.scad": "d391bb9e97c347cba291cfd4261512159b490917d5269a59931d7510427b6901"
+  }
+}

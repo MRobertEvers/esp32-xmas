@@ -1,0 +1,57 @@
+{
+  "revision": "Iron Man v5, chest armour",
+  "parts": {
+    "ironman_black.stl": {
+      "sha256": "fb4d6156de52aa898d11b6b59f4ec1986ecafb1b6dcbc0894bbc8bd1430923c8",
+      "watertight": true,
+      "winding_consistent": true,
+      "components": 7,
+      "volume_mm3": 879.0648
+    },
+    "ironman_body.stl": {
+      "sha256": "7ef0808841bd1bdbe60bf4d5c2fa6b5b58f0e69ba4d48d66d937cc46b4231041",
+      "watertight": true,
+      "winding_consistent": true,
+      "components": 1,
+      "volume_mm3": 66120.8526
+    },
+    "ironman_gold.stl": {
+      "sha256": "67abe777072290200e3f5db9df53d0436314bdb747d114c07c143f15091217f0",
+      "watertight": true,
+      "winding_consistent": true,
+      "components": 2,
+      "volume_mm3": 184.7998
+    },
+    "ironman_white.stl": {
+      "sha256": "acb6386bacb19898d8ed826645c703fe7e74d0af3b954f6cb8e8d85693758aa9",
+      "watertight": true,
+      "winding_consistent": true,
+      "components": 1,
+      "volume_mm3": 258.6999
+    }
+  },
+  "geometry_checks": {
+    "core": {
+      "empty": true,
+      "residual_volume_mm3": 0
+    },
+    "colours": {
+      "empty": false,
+      "residual_volume_mm3": 6.063298011819522e-12
+    },
+    "backing": {
+      "empty": true,
+      "residual_volume_mm3": 0
+    }
+  },
+  "tolerance_mm3": 0.0001,
+  "print_dimensions_mm": [
+    82.0,
+    25.0,
+    75.0
+  ],
+  "source_sha256": {
+    "ironman_v5.scad": "8300eb90e476105c9dc1c58c909904a7340fc5dd48880c0f454ceb3da03f5237",
+    "xmas_orn_case.scad": "353e4d7a6c33eb5a996bc165edbf55d3b42be81c8400d3dd146988db9215f410"
+  }
+}
