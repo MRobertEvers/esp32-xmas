@@ -4,15 +4,19 @@ set(IDF_TARGET esp32s3)
 
 #
 # WHERE THE LIBRARIES COME FROM. ToriDraw, RSCache and the adaptor between them
-# all live in oldschool-clientc/3rd, vendored here as a SUBMODULE pinned to a
-# commit -- 3rd/oldschool-clientc, see .gitmodules.
+# all live in oldschool-clientc/3rd. The parts this build uses are VENDORED here
+# as plain files in 3rd/oldschool-clientc, at the same paths, pinned to the
+# commit recorded in 3rd/oldschool-clientc/VENDORED.md. Update them with
+# scripts/vendor-clientc.sh; do not edit them in place.
 #
 # It used to be `../oldschool-clientc`: whatever happened to be checked out in
 # a sibling directory on the machine doing the build. That is not a version.
 # Two people with different working copies got different firmware from the same
 # source tree and nothing recorded the difference, and the raster kernels this
 # client depends on are developed in that repo, so "different" was routine.
-# A submodule makes the dependency a commit hash in this repo's history.
+# Vendoring makes the dependency part of this repo's history. (It was a
+# submodule for a while: 14k files of unrelated client code checked out to
+# use six directories, and a nested repo for editors to trip over.)
 #
 # CLIENTC_DIR still overrides it, which is what you want while developing
 # against a working copy of the library:
@@ -27,8 +31,8 @@ endif()
 if(NOT EXISTS "${CLIENTC_DIR}/3rd/toridraw/toridraw_unity.c")
     message(FATAL_ERROR
         "oldschool-clientc not found at ${CLIENTC_DIR}.\n"
-        "If this is a fresh clone, the submodule is not checked out yet:\n"
-        "    git submodule update --init --recursive\n"
+        "The vendored copy belongs in 3rd/oldschool-clientc; restore it with\n"
+        "    scripts/vendor-clientc.sh <oldschool-clientc working copy> [commit]\n"
         "Or point the build at a working copy with -DCLIENTC_DIR=<path>.")
 endif()
 
@@ -45,16 +49,16 @@ set(MODEL_ID "7" CACHE STRING "dat1 model archive id, used when MODEL_FILE is em
 #
 # THE CACHES ARE DATA, AND DATA IS NOT VENDORED.
 #
-# CLIENTC_DIR is a pinned submodule, and oldschool-clientc gitignores `cache.*/`
-# -- so the submodule carries the libraries and the configs but no cache. The
+# CLIENTC_DIR is the vendored copy, which carries the libraries and all.seq but
+# no cache (oldschool-clientc gitignores `cache.*/` anyway). The
 # caches are gigabytes of game data that do not belong in either repo's history,
 # so they stay a local prerequisite and get their own root.
 #
 # Pointing these at CLIENTC_DIR would look tidier and would silently break every
-# fresh clone, because the directory exists and is empty.
+# fresh clone, because the directory exists and has no cache in it.
 #
 set(CACHE_ROOT "${CMAKE_CURRENT_LIST_DIR}/../oldschool-clientc"
-    CACHE PATH "Where the OSRS caches live; NOT the vendored submodule")
+    CACHE PATH "Where the OSRS caches live; NOT the vendored copy")
 
 set(CACHE_DIR "${CACHE_ROOT}/cache.rs289lc" CACHE PATH "dat1 OSRS cache directory")
 

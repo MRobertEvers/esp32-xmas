@@ -1,0 +1,966 @@
+"""Command knowledge this repo has and the vendored RuneStar tables do not.
+
+Two kinds of entry, both layered over `vendor/` by gen_cs2_tables.py:
+
+  LOCAL_NAMES -- an opcode Opcodes.kt never listed, or listed only as a
+                 placeholder. Giving it a name lets the decompiler print it
+                 instead of failing.
+  LOCAL_BASIC -- a signature for a Basic command Command.kt does not carry.
+                 Without one, an opcode that appears in a script aborts the
+                 decompile of that script, because the interpreter cannot know
+                 how many values to pop.
+
+Anything added here must be *established*, not guessed: a wrong pop count does
+not fail loudly, it desynchronises the operand stack and produces a plausible
+decompile of a different program. Where the count comes from a client that
+implements the opcode, say which.
+
+The signature format matches Command.kt's Basic: (args, defs, dot). `args` are
+popped bottom-to-top, `defs` are pushed. `dot` marks the commands whose operand
+byte selects the "." (active-component) form.
+"""
+
+from __future__ import annotations
+
+# id -> NAME. Names are lowercased for output.
+LOCAL_NAMES: dict[int, str] = {
+    # RuneLiteOpcodes.RUNELITE_EXECUTE; event name popped, remaining stacks live.
+    6599: "runelite_callback",
+    # First seen in OldSchool 239's gameframe scripts; neither vendored table
+    # names it, and its meaning is still unknown. Named so the decompiler can
+    # print it — the signature below is what lets it get that far.
+    210: "cc_find_param",
+    # Vendored Opcodes.kt still calls this if_haschild_modal (rev-634 name).
+    # At osrs239 it is IF_SETPARAM (xrsps WidgetOps); Overview script 9176
+    # call sites are five ints and nothing out — haschild's (2i->1i) desyncs.
+    2704: "if_setparam",
+    # A varp read and written as a long (cache.osrs241, absent from the rev-239
+    # deob): script 9911 pushes 64's result into `tostring_spacer_long`, and
+    # 778 stores to varp 5753 (ge_newoffer_price) with 65.
+    64: "push_var_long",
+    65: "pop_var_long",
+    # New in 241 and absent from the rev-239 deob. Script 9914, its one call
+    # site, clamps a long local with long_max/long_min, then 4062 takes that
+    # long and the script returns its one int: long -> int.
+    4062: "long_to_int",
+    # New in 242: the display-name checker (interface 2357, scripts
+    # 10213..10238), absent from every client we have. Names are read off what
+    # the calling scripts do with them ("Please enter the name you wish to
+    # check.", "Your request to cancel the session was unsuccessful."); the
+    # counts below are call-site balance, every site storing each result into
+    # a fresh local at once.
+    5100: "displaynames_poll",
+    5101: "displaynames_getsession",
+    5102: "displaynames_check",
+    5103: "displaynames_getcheck",
+    5104: "displaynames_submit",
+    5105: "displaynames_getsubmit",
+    5106: "displaynames_cancel",
+    5107: "displaynames_getcancel",
+    5108: "displaynames_end",
+}
+
+# NAME -> (args, defs, dot)
+LOCAL_BASIC: dict[str, tuple[list[str], list[str], bool]] = {
+    "runelite_callback": (["STRING"], [], False),
+
+    # osrs242's display-name checker (LOCAL_NAMES 5100..5108). Scripts 10224,
+    # 10227, 10232 and 10235 pop the results into int locals 4..0 and string
+    # local 0 in reverse push order; 10221/10222 push varcstring 1588 (the
+    # typed name) for 5102/5104 and nothing else.
+    "displaynames_poll": ([], [], False),
+    "displaynames_getsession": ([], ["INT", "INT", "STRING", "INT", "INT", "INT"], False),
+    "displaynames_check": (["STRING"], [], False),
+    "displaynames_getcheck": ([], ["INT", "INT", "STRING", "INT", "INT", "INT", "INT"], False),
+    "displaynames_submit": (["STRING"], [], False),
+    "displaynames_getsubmit": ([], ["INT", "INT", "STRING", "INT"], False),
+    "displaynames_cancel": ([], [], False),
+    "displaynames_getcancel": ([], ["INT", "INT", "STRING"], False),
+    "displaynames_end": ([], [], False),
+
+    # ---------------------------------------------------------------
+    # The long stack. Every count is the rev-239 deob's own (Statics, the
+    # 4000-range math handler: class42.field258 is the long stack, field259 its
+    # pointer; field254/field257 the ints). A long's operand order across two
+    # stacks is the order the cache's compiler pushes them in, read off
+    # cache.osrs241's call sites where they exist.
+    # ---------------------------------------------------------------
+    "long_add": (["LONG", "LONG"], ["LONG"], False),
+    "long_sub": (["LONG", "LONG"], ["LONG"], False),
+    "long_multiply": (["LONG", "LONG"], ["LONG"], False),
+    "long_divide": (["LONG", "LONG"], ["LONG"], False),
+    "long_min": (["LONG", "LONG"], ["LONG"], False),
+    "long_max": (["LONG", "LONG"], ["LONG"], False),
+    # 4043: a * c / b through BigInteger, three longs in.
+    "long_scale": (["LONG", "LONG", "LONG"], ["LONG"], False),
+    "int_to_long": (["INT"], ["LONG"], False),
+    "long_setbit": (["LONG", "INT"], ["LONG"], False),
+    "long_clearbit": (["LONG", "INT"], ["LONG"], False),
+    "long_testbit": (["LONG", "INT"], ["BOOLEAN"], False),
+    "long_bitcount": (["LONG"], ["INT"], False),
+    "long_togglebit": (["LONG", "INT"], ["LONG"], False),
+    "long_setbit_range": (["LONG", "INT", "INT"], ["LONG"], False),
+    "long_clearbit_range": (["LONG", "INT", "INT"], ["LONG"], False),
+    "long_getbit_range": (["LONG", "INT", "INT"], ["LONG"], False),
+    "long_modulo": (["LONG", "LONG"], ["LONG"], False),
+    "long_and": (["LONG", "LONG"], ["LONG"], False),
+    "long_or": (["LONG", "LONG"], ["LONG"], False),
+    "long_not": (["LONG"], ["LONG"], False),
+    # 4059 pops two longs and two ints; no 241 script calls it, so the
+    # interleaving is the deob's own read order.
+    "long_setbit_range_tolong": (["LONG", "LONG", "INT", "INT"], ["LONG"], False),
+    # 4060 packs (hi, lo) ints into one long; 4061 splits it back, hi first.
+    "long_pack": (["INT", "INT"], ["LONG"], False),
+    "long_unpack": (["LONG"], ["INT", "INT"], False),
+    "long_to_int": (["LONG"], ["INT"], False),
+    "long_high_to_int": (["LONG"], ["INT"], False),
+    "tostring_long": (["LONG"], ["STRING"], False),
+    # 4126 pops the long, then the separator string: `tostring_spacer_long(v, ",")`
+    # (script 9911 pushes the long first).
+    "tostring_spacer_long": (["LONG", "STRING"], ["STRING"], False),
+    # 3229: the first op of script 9790, with nothing on the stack, before a
+    # run of translations_set pairs. No case in the rev-239 deob.
+    "translations_clear": ([], [], False),
+    # Grand Exchange prices went to the long stack in 241: every call site in
+    # cache.osrs241 stores 3905's and 3908's one result with pop_long_local, and 3932's
+    # two with pop_long_local then pop_int_local (so the long is on top). The
+    # table is not per-revision; these are 241's shapes, which is what the
+    # content tree now is. 3925 has no call site; the rev-241 deob pushes it to
+    # the long stack under the same gate as 3905/3908 (clientscript archive
+    # version.dat >= 10).
+    "stockmarket_getofferprice": (["INT"], ["LONG"], False),
+    "stockmarket_getoffercompletedgold": (["INT"], ["LONG"], False),
+    "tradingpost_getofferprice": (["INT"], ["LONG"], False),
+    "stockmarket_value": (["INT"], ["INT", "LONG"], False),
+
+    # Command.kt (2021) never gained these, though Opcodes.kt names them. The
+    # pop/push counts are src/cs2vm2/cs2vm2_opcode_stack.gen.h's, i.e. taken
+    # from a client that executes them, not from the name.
+    #
+    # CC_COPY 105 = { int_in 3 }: parent, src_sub, dst_sub. Clones a dynamic
+    # child into another slot under the same parent and makes the copy active.
+    "CC_COPY": (["COMPONENT", "COMSUBID", "COMSUBID"], [], True),
+    # Rev-239 opcode 210 has five fixed ints and two values selected by the two
+    # trailing base-type ids. LOCAL_KINDS below models that dynamic payload.
+    "cc_find_param":
+        (["COMPONENT", "INT", "INT", "INT", "INT", "INT", "INT"], ["INT"], False),
+    # The cache's 7200-range collection iterators consume their selectors;
+    # vendored Command.kt recorded only the result side.
+    "entityoverlay_get_loc": (["INT"], ["INT"], False),
+    "entityoverlay_get_coord": (["INT", "INT"], ["INT"], False),
+    # 4016 / 4017 = { int_in 2, int_out 1 }.
+    "MIN": (["INT", "INT"], ["INT"], False),
+    "MAX": (["INT", "INT"], ["INT"], False),
+    # 4122 = { str_in 1, str_out 1 }, the counterpart of LOWERCASE 4039.
+    "UPPERCASE": (["STRING"], ["STRING"], False),
+
+    # ---------------------------------------------------------------
+    # Solved from the corpus by `cs2 infer-arity`, not transcribed from a
+    # source. For each opcode the tool takes the osrs230 scripts where it is
+    # the only unknown, tries every plausible (int in, str in, int out, str
+    # out), and keeps the ones under which the script interprets *and* every
+    # `return` matches the arity the script's own epilogue declares. Listed
+    # here are the ones where a single candidate survived, or where the
+    # survivors all produce identical source.
+    #
+    # The witness count is the evidence. One witness is weaker than thirty and
+    # is marked as such; re-run the tool after adding knowledge and it will
+    # narrow further. Prototypes are plain int/string because the method
+    # establishes counts, not meanings.
+    # ---------------------------------------------------------------
+    # 1152: 2 witnesses, unique.
+    "cc_crmview_dismiss": ([], ["INT"], False),
+    # 1928: 5 witnesses, unique.
+    "cc_triggerop": (["INT"], [], False),
+    # 3102: 2 witnesses, unique.
+    "mes_typed": (["INT", "STRING"], [], False),
+    # 3189: 1 witness, unique.
+    "seq_prefetch": (["INT"], [], False),
+    # 3223: 2 witnesses, unique.
+    "rt7_setenabled": (["INT"], [], False),
+    # 3224: 1 witness, unique.
+    "rt7_sd": ([], [], False),
+    # 3225: 1 witness, unique.
+    "rt7_hd": ([], [], False),
+    # 3329: 1 witness, unique.
+    "idletimer_reset": ([], [], False),
+    # 3931: 1 witness, unique.
+    "stockmarket_sellable": (["INT"], ["INT"], False),
+    # 4036: 2 witnesses, unique.
+    "parseint": (["STRING"], ["INT"], False),
+    # 4124: 30 witnesses, output-equivalent.
+    "pronoun": ([], ["STRING"], False),
+    # 6863: 1 witness, unique.
+    "obj_owner": ([], ["INT"], False),
+    # 7040: 2 witnesses, unique.
+    "highlight_group_setup": (["INT", "INT", "INT", "INT", "INT"], [], False),
+    # 7044: 1 witness, unique.
+    "highlight_group_clear": (["INT"], [], False),
+    # 7406: 2 witnesses, unique.
+    "stringvector_get": (["INT", "INT"], ["STRING"], False),
+    # 7409: 2 witnesses, unique.
+    "stringvector_clear": (["INT"], [], False),
+    # 7460: 1 witness, unique.
+    "minimenu_hovered_index": ([], ["INT"], False),
+    # 7462: 3 witnesses, unique.
+    "minimenu_setblockmode": (["INT", "INT"], [], False),
+    # 7465: 1 witness, unique.
+    "minimenu_resetorder": ([], [], False),
+    # 7466: 1 witness, unique.
+    "minimenu_setorderedit": (["INT"], [], False),
+    # 7470: 1 witness, unique.
+    "minimenu_togglescroll": ([], [], False),
+    # 7613: 2 witnesses, unique.
+    "loottracker_clear": ([], [], False),
+    # 7614: 1 witness, unique.
+    "loottracker_lootdel_byname": (["STRING"], [], False),
+    # 7616: 2 witnesses, unique.
+    "loottracker_ignorelootadd": (["STRING"], [], False),
+    # 7617: 2 witnesses, unique.
+    "loottracker_ignorelootdel": (["STRING"], [], False),
+    # 7621: 1 witness, unique.
+    "loottracker_ignorelootclear": ([], [], False),
+    # 7622/7623: source-ignore add/remove (script 1791); mirror 7616/7617.
+    "loottracker_ignoresourceadd": (["STRING"], [], False),
+    "loottracker_ignoresourcedel": (["STRING"], [], False),
+    # 7809: 1 witness, unique.
+    "hiscore_getstatus": ([], ["INT"], False),
+    # 7810: 2 witnesses, unique.
+    "hiscore_clear": ([], [], False),
+    # 7811: 1 witness, unique.
+    "hiscore_geterror": ([], ["STRING"], False),
+    # 7812: 1 witness, unique.
+    "hiscore_setapi": (["INT"], [], False),
+    # 3932: 4 witnesses, unique (round 1) -- (int) -> (int, int) on the 230
+    # corpus. 241 made the second a long; see stockmarket_value above.
+    # 7471: 1 witness, unique (round 1).
+    "minimenu_getscroll": ([], ["INT"], False),
+    # 7823: 1 witness, unique (round 1).
+    "hiscore_getmembername": (["INT"], ["STRING"], False),
+    # 1624: solved jointly with 2624; only one arity for each lets the
+    # pair balance the stack in the script they share.
+    "cc_input_getfocus": ([], ["INT"], False),
+    # 6761: solved jointly with 6762; only one arity for each lets the
+    # pair balance the stack in the script they share.
+    "nc_getopbase": (["INT", "INT", "INT"], ["STRING"], False),
+    # 6762: solved jointly with 6761; only one arity for each lets the
+    # pair balance the stack in the script they share.
+    "nc_getop": (["INT", "INT", "INT"], ["STRING"], False),
+    # 6806: solved jointly with 6807; only one arity for each lets the
+    # pair balance the stack in the script they share.
+    "lc_getopbase": (["INT", "INT"], ["STRING"], False),
+    # 6807: solved jointly with 6806; only one arity for each lets the
+    # pair balance the stack in the script they share.
+    "lc_getop": (["INT", "INT", "INT"], ["STRING"], False),
+    # 6857: solved jointly with 6858; only one arity for each lets the
+    # pair balance the stack in the script they share.
+    "oc_getopbase": (["INT", "INT"], ["STRING"], False),
+    # 6858: solved jointly with 6857; only one arity for each lets the
+    # pair balance the stack in the script they share.
+    "oc_getop": (["INT", "INT", "INT"], ["STRING"], False),
+    # 7603: solved jointly with 7604; only one arity for each lets the
+    # pair balance the stack in the script they share.
+    "loottracker_sourceid": (["STRING"], ["INT"], False),
+    # 7604: solved jointly with 7603; only one arity for each lets the
+    # pair balance the stack in the script they share.
+    "loottracker_sourcecount": (["STRING"], ["INT"], False),
+    # 6809: 3 witness(es), unique.
+    "lc_name": (["INT"], ["STRING"], False),
+    # ---------------------------------------------------------------
+    # Round 3, solved by `cs2 infer-arity` against cache.osrs239 after the DB
+    # family stopped mis-shaping the stack (LOCAL_KINDS below). That fix is what
+    # made these solvable: db_getfield's wrong push count desynchronised the
+    # scripts these opcodes appear in, so every candidate arity failed and the
+    # solver reported "no arity works" for opcodes whose arity was in fact
+    # pinned.
+    #
+    # Single-witness solutions where the tool reported `unique`: exactly one
+    # (int in, str in, int out, str out) let the script interpret to its end
+    # with every `return` matching the arity its own epilogue declares.
+    "if_setlocmodel": (["INT", "INT"], [], False),
+    "if_setnpcmodel": (["INT", "INT"], [], False),
+    "cc_sethttpsprite": (["STRING"], [], False),
+    "cc_setlocmodel": (["INT"], [], False),
+    "client_version": ([], ["INT", "INT"], False),
+    "hiscore_getmemberlevel": (["STRING"], ["INT"], False),
+    "hiscore_getmemberhiscores": (["INT"], [], False),
+    # Solved jointly, and each of these was reached from more than one partner:
+    # The rev-239 client pops the final base-type code, then a value from the
+    # selected int/string/long stack, then the param id. The active component
+    # comes from the handler preamble and the operand selects its dot form.
+    "cc_setparam": (["INT", "NONE", "INT"], [], True),
+    # 2929 has no fixed signature. The rev-239 client calls `method989` — pop a
+    # descriptor string, then one value per character, 'i' from the int stack
+    # and anything else from the string stack — then pops three fixed ints.
+    # DESCRIPTOR_ARGS handles that shape; this tuple only supplies its name.
+    "if_script_trigger": (["INT", "INT", "INT", "INT", "STRING"], [], False),
+    "cc_getparentlayer": ([], ["INT"], False),
+    "if_query_next": ([], ["INT"], False),
+    "if_query_nextid": ([], ["INT"], False),
+    "cc_assert": ([], [], False),
+    "push_constant_null": ([], ["STRING"], False),
+    "array_size": (["STRING"], ["INT"], False),
+    "enum_getoutputs": (["INT", "INT"], ["STRING"], False),
+    # Round 4, after round 3 turned two-unknown scripts into one-unknown ones.
+    "stringvector_add": (["INT", "STRING"], [], False),
+    "hiscore_getvalue": (["STRING"], ["INT"], False),
+    "cc_parentid": ([], ["INT"], False),
+    "cc_input_setfocus": (["INT"], [], False),
+    "cc_input_setfocusable": (["INT"], [], False),
+    # 8022 was not solved by search -- it appears alongside other unknowns in
+    # every script -- but its call sites settle it on their own. In script 8153
+    # it occurs three times in a row at a statement boundary, each time as
+    # exactly three `push_constant_int`/`push_int_local` followed by
+    # `pop_string_local`, and 38 further sites have the same shape. Three ints
+    # in, one string out is the only reading, and it is worth 40 scripts.
+    # xrsps names it ARRAY_NEW (typeCode, length, capacity) -> handle.
+    "array_create": (["INT", "INT", "INT"], ["STRING"], False),
+    # Round 5. The search converges here: rounds 6 and 7 solve nothing new.
+    "hiscore_getrank": (["STRING"], ["INT"], False),
+    "cc_input_setcaret": (["INT"], [], False),
+    # Round 6. Round 7 solves nothing new: the search has converged, and what
+    # remains needs an opcode identified in a client rather than inferred (G4).
+    "cc_input_getcaretposition": ([], ["INT"], False),
+    "cc_input_setlinewidthlimit": (["INT"], [], False),
+
+    # ---------------------------------------------------------------
+    # Skill-guide Overview tab (scripts 9150..9199 / 9176), remeasured
+    # 2026-08-03. LostCity has no reference (PORTING_GUIDE §5). Names from
+    # xrsps Opcodes.ts where it has them; arities from call-site balance and
+    # `cs2 decompile --override` scoring against cache.osrs239.
+    #
+    # 211/215: script 9181 — `push 1; push $com; push -1; 211; pop_int_discard;
+    # 215; pop_string_local; 8003`. Only (3i->1i)+(()->1s) and two weaker
+    # pairings decompile; the three-arg form matches the IF_GETCOMPONENTPARAM
+    # shape and is the one kept. 215's string is an array handle (8003'd).
+    "if_query": (["INT", "INT", "INT"], ["INT"], False),
+    "if_query_ids": ([], ["STRING"], False),
+    # 212: scripts 9179/9186 — after `.cc_find`, `push 1; 212; pop_int_discard;
+    # 213…`. (1i->1i) and (0i->0i) both decompile; (1i->0i) fails on the
+    # discard. Kept as (1i->1i): start_index in, child-count out — the CC
+    # children-find family (203/205) plus a count the scripts discard.
+    "cc_query": (["INT"], ["INT"], False),
+    # 8018: script 9183 — `push $s; push "||"; 8018; pop_string_local; 8003`.
+    # Two strings in, one string (array handle) out: split.
+    "string_split": (["STRING", "STRING"], ["STRING"], False),
+    # 8012: script 9194 — after ARRAY_SORT, `push $arr; 8012` twice. One
+    # string in, nothing out: array_reverse, per the client's declaration.
+    "array_reverse": (["STRING"], [], False),
+    # 8023: every Overview site is `push $arr; push N; 8023` then N
+    # `pop_array_int` writes. Array handle + length in, nothing out: resize.
+    "array_resize": (["STRING", "INT"], [], False),
+    # 8024: script 9194 — `push $arr; push $value; push 0; 8024` (type 0 =
+    # int). Array + int value + type in, nothing out: append. Typed like
+    # ARRAY_COUNT_MATCHES when the type names a string; Overview only uses
+    # int. xrsps names the broader op ARRAY_INSERT (with an index); this
+    # cache's sites have no index.
+    # The final base-type code tells method6560 which stack holds the inserted
+    # value. `NONE` is a deliberate placeholder interpreted by TYPED_POP.
+    "array_push": (["STRING", "NONE", "INT"], [], False),
+    # 2704: IF_SETPARAM. xrsps WidgetOps: (param, value, uid, child, type)
+    # with typed value. Script 9176: five ints, nothing consumed. Override
+    # scoring `--override 2704:5,0,0,0` recovers 9176; the vendored
+    # if_haschild_modal (2i->1i) from an older deob does not. LOCAL_NAMES
+    # renames the row away from that stale spelling.
+    # method3056 pops (uid, child, type) together, then a typed value and the
+    # param. Source order is therefore (param, value, uid, child, type).
+    "IF_SETPARAM": (["INT", "NONE", "INT", "INT", "INT"], [], False),
+
+    # ---------------------------------------------------------------
+    # Settled from call sites rather than by search, against cache.osrs239.
+    #
+    # `cs2 infer-arity` needs a witness script to interpret end to end, so an
+    # opcode that only ever appears beside another unknown is invisible to it.
+    # A call site says a great deal on its own: between two statement boundaries
+    # the operand stack starts and ends empty, so where every other op in the
+    # run has a signature, the pushes before and the pops after pin what the
+    # unknown took and left. `cs2 disassemble` prints the per-op int/string
+    # effects this reads.
+    #
+    # Only opcodes where one arity survives at *every* such site are here.
+    "cc_input_setlinewrappingwidth": (["INT"], [], False),
+    "cc_input_setsubmitmode": (["INT"], [], False),
+    "cc_crmview_init_v2": (["STRING", "STRING", "STRING"], [], False),
+    "sound_song_withsecondary": (["INT", "INT", "INT", "INT", "INT", "INT"], [], False),
+    # Dormant notification ABI in this cache: two strings, two ints, then an
+    # int result. The rev-239 client handler is only a no-argument stub that
+    # pushes 0, so the cache call sites are the source-order evidence.
+    "notifications_sendlocal": (["STRING", "STRING", "INT", "INT"], ["INT"], False),
+    # Two menu indices, generated submenu text, then the explicit component.
+    # The older official client has no 2311 case, but both cache witnesses use
+    # this same inter-bank order.
+    "if_setsubop": (["INT", "INT", "STRING", "COMPONENT"], [], False),
+    # Companion clear/reset form: option index and explicit component.
+    "if_clearsubops": (["INT", "COMPONENT"], [], False),
+    # 4123 pushes a string too, which the call-site pass missed because every
+    # site it could use had a `gosub` in the same run. `--override 4123:0,3,0,1`
+    # decompiles 14 more scripts than `0,3,0,0`; nothing else in the space beats it.
+    "text_pronoun": (["STRING", "STRING", "STRING"], ["STRING"], False),
+    "highlight_group_on": (["STRING", "INT"], [], False),
+    # Source order is string then selector. The physical client pops the two
+    # independent banks directly, so a net-only table cannot recover this.
+    "highlight_group_off": (["STRING", "INT"], [], False),
+    "loottracker_lootdel_byid": (["INT"], [], False),
+    # 8019: was recorded as (str,str)->() from an incomplete call-site pass.
+    # Script 9153 pins the push: after `push ""; push $arr; push "||::p||";
+    # 8019` the next gosub is 9182 which takes (int, str, str). Only a string
+    # out leaves the stack right; xrsps ARRAY_JOIN agrees (array, sep) -> str.
+    "string_join": (["STRING", "STRING"], ["STRING"], False),
+    # Loot-tracker native store (rev-239). Settled from script 7166's
+    # bytecode, not a client: every site sits between empty-stack statement
+    # boundaries (or is pinned by the pushes immediately before and the
+    # typed pop immediately after). `cs2 decompile` with these five overrides
+    # and nothing else recovers 7166 end-to-end; flipping any one arity fails
+    # it. The older deob that supplied the 7500/8000 block below predates this
+    # range (local_commands.py header / tools/README.md G4), which is why
+    # infer-arity alone never saw them — they only ever appear beside each
+    # other until the call-site pass breaks the cycle.
+    #   $n = _7605(0, ~script1046(_7601, 10), 1);
+    #   while ($i < $n) { $id = _7606($i); $name = _7602($id); … }
+    #   $name = _7630($id);   # second list, string-keyed
+    "loottracker_sourcenamecount": ([], ["INT"], False),
+    "loottracker_sourcename": (["INT"], ["STRING"], False),
+    "loottracker_sourcequery_new": (["INT", "INT", "INT"], ["INT"], False),
+    "loottracker_sourcequery_get": (["INT"], ["INT"], False),
+    "loottracker_sourcedropname": (["INT"], ["STRING"], False),
+    # Same call-site method, scripts 7200 / 1792 (loottools chrome helpers
+    # gosub'd from 7166). 7200 and 1792 are structural twins: begin→count,
+    # index→name, then a three-arg write. 7401's args are INT,STRING,INT —
+    # the two stacks make that (2,1,0,0) at the VM regardless of interleaving.
+    "loottracker_ignorelootcount": ([], ["INT"], False),
+    "loottracker_ignorelootget": (["INT"], ["STRING"], False),
+    "loottracker_ignoresourcecount": ([], ["INT"], False),
+    "loottracker_ignoresourceget": (["INT"], ["STRING"], False),
+    "stringvector_addunique": (["INT", "STRING", "INT"], [], False),
+    # 7408: every site is `_7408(<kind>, <string>, <a>, <b>) -> int` — three
+    # ints and one string in, one int out, read off the local stack deltas at
+    # 7133 pc149, 4298 pc84, 7158 pc18 and 7199 pc9 (four sites, one reading).
+    # Call-site evidence ONLY: it cannot be scored, because every script that
+    # uses it also holds other unknowns (7609/7404), so `cs2 decompile` fails
+    # on all of them under every candidate. `cs2 infer-arity` says "no arity
+    # works" for the same reason. Weaker evidence than the rest of this block;
+    # revisit if a client that implements the 7400 range turns up.
+    # Documented in chrome_panels §7.6 as un-tryable via `--override`
+    # (ints-then-strings only); LOCAL_BASIC keeps the interleaved order.
+    "stringvector_contains": (["INT", "STRING", "INT", "INT"], ["INT"], False),
+    # 7407: list/store length for a kind id — `_7407($kind) -> $n`, sites
+    # 7202/7212/7221 with nothing else on the stacks. `cs2 infer-arity` calls
+    # this "2 candidates, under-determined"; scoring settles it, which is the
+    # documented tiebreak (tools/README.md, method 3): over its six witnesses
+    # (1,0,1,0) decompiles 5 and every other candidate tried — (0,0,1,0),
+    # (1,0,0,0), (2,0,1,0), (1,0,0,1) — decompiles 0.
+    "stringvector_size": (["INT"], ["INT"], False),
+    # Tier-B loot row painters (scripts 4298 / 4452) and the remove twin of
+    # 7401. Settled from call-site stack deltas + `cs2 decompile --override`
+    # where the push order is ints-then-strings-legal; interleaved signatures
+    # are call-site only (same class as 7401). See chrome_panels_server_reqs
+    # and the chrome-panels plan.
+    #   7404: twin of 7401 at 7199/7222/1791 — (kind, string, flag) → ()
+    #   7608: () → int — script 7179 `_7605(0, _7608, 2)`
+    #   7609: (string) → int — script 4298 count for a string-keyed group
+    #   7610: (int) → int — script 4452 count for an int-keyed group
+    #   7611: (string, int) → (int, int) — 4298 index → (obj, qty)
+    #   7612: (int, int) → (int, int) — 4452 index → (obj, qty)
+    "stringvector_remove": (["INT", "STRING", "INT"], [], False),
+    "loottracker_getdroplimit": ([], ["INT"], False),
+    "loottracker_lootcount_byname": (["STRING"], ["INT"], False),
+    "loottracker_lootcount_byid": (["INT"], ["INT"], False),
+    "loottracker_lootget_byname": (["STRING", "INT"], ["INT", "INT"], False),
+    "loottracker_lootget_byid": (["INT", "INT"], ["INT", "INT"], False),
+    # 7628: script 7192 (LOOTTRACKER_ADD_LOOT) — push name, obj, qty, eventId
+    # then native store write. RuneLite ScriptPreFired args match that order.
+    "loottracker_lootadd": (["STRING", "INT", "INT", "INT"], [], False),
+
+    # ---------------------------------------------------------------
+    # Read out of a deobfuscated client, not inferred.
+    #
+    # The interpreter dispatches by opcode hundred and each handler works the
+    # operand stacks directly, in fixed idioms:
+    #
+    #     field870[++Statics.field3297 - 1] = v      push int
+    #     field870[--Statics.field3297]              pop  int
+    #     Statics.field3297 -= N                     pop  N ints
+    #     field877[++Statics.field4953 - 1] = v      push string   (etc.)
+    #
+    # so an arity can be read rather than searched for. Only straight-line
+    # handlers are taken: a block with a branch may push on one path and not the
+    # other, and counting the text would report both.
+    #
+    # Checked before it was trusted. Over the opcodes both this client and the
+    # vendored tables describe, 358 agree. The rest are era drift (SOUND_SONG
+    # gained arguments between the two) or the IF_* family's shared component
+    # pop, which happens outside the per-opcode block. None of those opcodes are
+    # taken from here -- only the ones nothing else describes at all.
+    #
+    # The client is *older* than cache.osrs239: it implements 7500..7507 and
+    # 8000..8001 and nothing above, while the cache uses opcodes up to 8026. So
+    # this settles the long-established ranges and says nothing about the new
+    # ones, which is why the 7600+ and 8005+ opcodes are still unknown.
+    "cc_crmview_init": (["STRING"], [], True),
+    "cc_crmview_settextfont": (["INT", "INT"], [], True),
+    # method12438/1132 calls method7303(popString(), popInt()).
+    "cc_crmview_setservertargets": (["STRING", "INT"], [], True),
+    "cc_input_setselectcolour": (["INT"], [], True),
+    "cc_input_setselectbgcolour": (["INT"], [], True),
+    "cc_input_setplaceholdertext": (["STRING"], [], True),
+    "cc_input_setplaceholdertextcolour": (["INT"], [], True),
+    "cc_input_setlinecountlimit": (["INT"], [], True),
+    "cc_input_setselection": (["INT", "INT"], [], True),
+    "cc_input_setwrapmode": (["INT"], [], True),
+    "cc_input_setacceptmode": (["INT"], [], True),
+    "cc_input_setcensormode": (["INT"], [], True),
+    "cc_input_setkeymode": (["INT", "INT"], [], True),
+    "cc_input_setcharmode": (["INT", "INT"], [], True),
+    "cc_crmview_setjson": (["STRING"], [], True),
+    "cc_setplayermodel_self": (["INT"], [], True),
+    "cc_setplayermodel_obj": (["INT"], [], True),
+    "cc_setplayermodel_basecolour": (["INT", "INT"], [], True),
+    "cc_setplayermodel_bodytype": (["INT"], [], True),
+    "cc_crmview_setonupdated": ([], [], True),
+    "cc_setonopt": ([], [], True),
+    # method7565 always consumes the string key and pushes an int result; the
+    # component itself is implicit in this active-form opcode.
+    "cc_crmview_getint": (["STRING"], ["INT"], True),
+    "if_crmview_getint": (["INT"], [], False),
+    "if_crmview_getstring": (["INT"], [], False),
+    "settitlescreensound": (["INT"], [], False),
+    "settermsandprivacy": ([], [], False),
+    "gettermsandprivacy": ([], ["INT"], False),
+    "eligibleforfreetrial": ([], ["INT"], False),
+    "eligibleforintroductoryprice": ([], ["INT"], False),
+    "getpuchasehistorystatus": ([], ["INT"], False),
+    "getloadingprogress": ([], ["INT"], False),
+    "getpreloadprogress": ([], ["INT"], False),
+    "shop_purchaseitem": (["STRING"], [], False),
+    "shop_requestdata": ([], [], False),
+    "shop_purchaseitemstatus": ([], ["INT"], False),
+    "shop_requestdatastatus": ([], ["INT"], False),
+    "shop_getcategorycount": ([], ["INT"], False),
+    "shop_getcategoryid": (["INT"], ["INT"], False),
+    "shop_getindexforcategoryid": (["INT"], ["INT"], False),
+    "shop_getindexforcategoryname": (["STRING"], ["INT"], False),
+    "shop_getcategorydescription": (["INT"], ["STRING"], False),
+    "shop_getproductcount": (["INT"], ["INT"], False),
+    "shop_isproductavailable": (["INT", "INT"], ["INT"], False),
+    "shop_isproductrecommended": (["INT", "INT"], ["INT"], False),
+    # 3168: skipped, 2i/0s -> 0i/9s is a loop, not an arity
+    "unknown_command_3169": ([], [], False),
+    "unknown_command_3174": (["INT"], [], False),
+    "notifications_getenabled": ([], ["INT"], False),
+    "unknown_command_3176": ([], [], False),
+    "marketing_initanalytics": ([], [], False),
+    "marketing_sendanalyticsevent": (["STRING"], [], False),
+    "marketing_initattribution": ([], [], False),
+    "marketing_sendattributionevent": (["STRING"], [], False),
+    "setdrawdistance": (["INT"], [], False),
+    "getdrawdistance": ([], ["INT"], False),
+    "unknown_command_3211": ([], [], False),
+    "gameoption_getrange": (["INT"], [], False),
+    "sound_song_stop": (["INT", "INT"], [], False),
+    "sound_song_swap": (["INT", "INT", "INT", "INT"], [], False),
+    "runenergy": ([], ["INT"], False),
+    "stat_unknown": (["INT"], ["INT"], False),
+    "unknown_command_3333": ([], ["STRING"], False),
+    "nc_headicon": (["INT", "INT"], ["INT", "INT"], False),
+    "minimenu_setsingleclick": (["INT"], [], False),
+    "worldentity_setrenderlimit": (["INT"], [], False),
+    "worldentity_getrenderlimit": ([], ["INT"], False),
+    "array_sort": (["INT"], [], False),
+    "array_randomise": (["INT", "INT", "INT"], [], False),
+    # ---------------------------------------------------------------
+    # Stale signatures, corrected against cache.osrs239.
+    #
+    # These are opcodes the vendored tables *do* describe and describe wrongly
+    # for this revision -- G4's "some known opcode's signature has drifted"
+    # residue, finally isolated. Each was found by taking the deobfuscated
+    # client's reading, installing it with `cs2 decompile --override`, and
+    # counting: every one below decompiles strictly more scripts than the
+    # recorded signature does. The gain per opcode is noted.
+    #
+    # Mostly one shape of error -- a command that returns a pair or a quad
+    # recorded as returning one. WORLDMAP_LISTELEMENT_START reads four values,
+    # not one, which is why nothing in the world-map panel decompiled.
+    "DB_FIND_GET": (["INT"], ["INT"], False),                                # +19
+    "worldmap_getsourcecoord": (["INT"], ["INT", "INT", "INT", "INT"], False),               # +14
+    "worldmap_findnearestelement": (["INT", "INT"], ["INT", "INT"], False),                      # +14
+    "MEC_SPRITE": (["INT"], ["INT", "INT"], False),                        # +14
+    "worldmap_getmap": (["INT"], ["INT", "INT"], False),                             # +13
+    # method3100/6639 and /6640 push element id then packed coord: two ints.
+    "WORLDMAP_LISTELEMENT_START": ([], ["INT", "INT"], False),
+    "WORLDMAP_LISTELEMENT_NEXT": ([], ["INT", "INT"], False),
+    # method3100/6693 pushes one text string (or an empty default).
+    "MEC_TEXT": (["INT"], ["STRING"], False),
+    "MEC_CATEGORY": (["INT"], ["INT", "INT"], False),                      # +10
+    "SOUND_SONG": (["INT", "INT", "INT", "INT", "INT"], [], False),        # +1
+    # ---------------------------------------------------------------
+    # Solved by scoring, against cache.osrs239.
+    #
+    # `infer-arity` needs a witness script to interpret end to end and reported
+    # "no arity works" for these; the call-site pass could not use them either,
+    # because every run they appear in has a `gosub` or another unknown in it.
+    # What settles them is the count: install a candidate with
+    # `cs2 decompile --override`, decompile only the scripts that *use* that
+    # opcode, and take the arity that decompiles the most -- accepted only where
+    # one candidate stands alone.
+    #
+    # method12337 resolves the param config and pushes its declared int/string/
+    # long value from the active component. Its result is not statically int.
+    "cc_param": (["INT"], [], True),
+
+    # ---------------------------------------------------------------
+    # Read out of the *rev-239* client, which the block above did not have.
+    #
+    # `Deobfuscator/src_osrs239_rl1_12_33/deob/Statics.java`, the same tree
+    # `Deobfuscator/instr/src/` compiles. `Statics.method6889` is a range ladder
+    # from opcode to group handler; the citation on each line is the handler and
+    # the case. Ranges used here, re-derived from the ladder rather than read by
+    # eye (reading it by eye put the 4000s off by one hundred):
+    #
+    #     100..1000 method4548   1700..1800 method12337   2500..2600 method4787
+    #     2600..2700 method8067  4100..4200 method5814    4200..4300 method2965
+    #     8000..8100 method12336
+    #
+    # The three stacks, and which is which, are not guessed: `method7522` is
+    # `pushValueOfType` -- the deobfuscation left its exception strings intact --
+    # and it switches on the base var type to
+    #
+    #     type 1 -> class42.field258 / field259    (Long) ..... the long stack
+    #     type 2 -> class42.field252 / field3897   Object ..... the STRING stack
+    #     type 3 -> class42.field254 / field257    (Integer) .. the INT stack
+    #
+    # so `field252` is where strings live, despite `field258` being the one that
+    # looks like a string stack from its neighbours. One slot is 818837815 on
+    # field257, 1907375409 on field259 and -1540699919 on field3897; a multi-slot
+    # move is written as the multiple wrapped to signed 32 bits, so
+    # `field257 -= -1838453851` is a pop of three ints, not a push.
+    #
+    # Two things make counting the idioms in a case body wrong on its own, and
+    # both bit before they were caught:
+    #
+    #  - a handler can pop in its *preamble*, before it looks at the opcode.
+    #    method4787 and method8067 both open by popping a component id, so every
+    #    opcode in 2500..2699 takes one more argument than its own case shows.
+    #    `if_getx` 2500 in the vendored table confirms it: one COMPONENT in.
+    #  - a case can push through a helper. `method2627` pushes 0 or 1 on every
+    #    path -- it is "set the active component and push whether it was found" --
+    #    so opcodes 210 and 217..221 push an int no idiom in their body shows.
+    #    Every opcode below was checked against a transitive closure of which
+    #    methods in the tree touch a stack pointer; none of them reach one.
+    #
+    # `dot` is whether the case reads the handler's `var2`, the per-instruction
+    # flag the interpreter builds from `Script.field272[pc]`. That matches the
+    # corpus: 208 reads it and is the one opcode here whose operand byte is 1 at
+    # its only call site, and 216, which does not read it, is 0 at all 56 of its.
+    "cc_childcount": ([], ["INT"], True),                    # method4548 case 208
+    "if_query_refine": (["INT", "NONE", "INT"], ["INT"], False),  # method4548 case 216
+    "cc_crmview_gethasresponse": ([], ["INT"], True),                   # method12337 case 1707
+    # 2506/2624: nothing in the case body, one int from the handler preamble.
+    "if_getparentlayer": (["COMPONENT"], ["INT"], False),       # method4787 preamble + case
+    "if_input_getfocus": (["COMPONENT"], ["INT"], False),       # method8067 preamble + case
+    # 4127 is the least ambiguous case in the client: it is a literal
+    # `Integer.parseInt(String)` in a try/catch, pushing the value then 1, or
+    # 0 then 0 on NumberFormatException. One string in, two ints out.
+    "safeparseint": (["STRING"], ["INT", "INT"], False),   # method5814 case 4127
+    "oc_id": ([], [], False),                       # method2965 case 4223
+    # The 8000 block is the array family (_8022 ARRAY_NEW above hands out the
+    # handles). The handle is a string -- `field252` -- and is the first push at
+    # every call site, so it leads the argument list, matching _8003/_8018/
+    # _8019/_8023/_8024. The trailing int of the four is a *type code*: the
+    # client feeds it to `method6560`, which resolves a base var type rather
+    # than reading a value, so all four arguments are int-stack.
+    "array_isnull": (["STRING"], ["INT"], False),                       # method12336
+    "array_indexof": (["STRING", "NONE", "INT", "INT", "INT"], ["INT"], False),
+    "array_lastindexof": (["STRING", "NONE", "INT", "INT", "INT"], ["INT"], False),
+    "array_count": (["STRING", "NONE", "INT", "INT", "INT"], ["INT"], False),
+    "array_fill": (["STRING", "NONE", "INT", "INT", "INT"], [], False),
+    "array_generaterange": (["STRING", "INT", "INT", "INT"], [], False),       # method12336
+    "array_swap": (["STRING", "INT", "INT"], [], False),              # method12336
+    "array_copy": (["STRING", "STRING", "INT", "INT", "INT"], [], False),  # method12336
+    "enum_getinputs": (["INT", "INT"], ["STRING"], False),                # method12336
+    # 8026 is polymorphic in the client -- it ends in `method7522`
+    # (pushValueOfType), so what it pushes is the array's element type, not a
+    # fixed stack. It is recorded statically anyway because every one of its 61
+    # call sites in cache.osrs239 indexes an int-typed array: each is followed
+    # immediately by `pop_int_discard` or an int-consuming op. If a string-typed
+    # array ever reaches it this needs a LOCAL_KINDS entry, as db_getfield has.
+    "array_delete": (["STRING", "INT"], ["INT"], False),                # method12336
+    # Second pass, once the block above stopped hiding these behind other
+    # unknowns. Same tree, same method.
+    "oc_byid": (["INT"], ["INT"], False),          # method2965, the `var0 != 4224` arm
+    # Statics 8025 pops the selector, then the index, then the selector's value,
+    # then the array: chronologically array, value, index, selector (script
+    # 10123 inserts "Current" into a string array in exactly that order).
+    "array_insert": (["STRING", "NONE", "INT", "INT"], [], False),
+    "array_pushall": (["STRING", "STRING"], [], False),                  # method12336
+    # 8009 is polymorphic like 8026 — it pushes to the int stack or the string
+    # stack depending on the array's element type. Recorded as int because all
+    # three of its call sites in cache.osrs239 are followed by `pop_int_local`
+    # or `max`, which only take one.
+    "array_max": (["STRING"], ["INT"], False),                       # method12336
+    # 7627 has no case in this client (method10020, the 7600 range, is a bare
+    # `return 2`). Solved instead by `cs2 infer-arity` against cache.osrs239:
+    # one witness script, and exactly one arity in the space lets it interpret
+    # to its end with every return matching its own epilogue.
+    "loottracker_ignoresourceclear": ([], [], False),
+
+    # ---------------------------------------------------------------
+    # No case in the rev-239 client either (their handlers exist but skip these
+    # ids), and `cs2 infer-arity` calls each one "2 candidates, under-determined".
+    # The two candidates are always the same pair — (n in, 1 out) against
+    # (n-1 in, 0 out) — which balance identically because they differ by one
+    # slot at each end. Balance alone cannot separate them; the call sites can,
+    # and they are unanimous. Every single use of all three reads
+    #
+    #     push <args> ; <opcode> ; push_constant_int 1 ; branch_equals
+    #
+    # and `branch_equals` pops two ints, one of which is that constant. So the
+    # opcode leaves an int behind, which settles it as the (n in, 1 out) member
+    # of each pair. All three are boolean queries, which is also what the rest
+    # of the 6700–6999 range looks like.
+    "npc_finduid": (["INT"], ["INT"], False),          # 9 witnesses, every site
+    "loc_find": (["INT", "INT"], ["INT"], False),   # 9 witnesses, every site
+    "tile_find": (["INT"], ["INT"], False),          # 5 witnesses, every site
+
+    # ---------------------------------------------------------------
+    # The rest of the ids this client's handlers skip, settled the same way:
+    # what the ops around a call site consume is what the call site left.
+    # `infer-arity` reports "no arity works" for most of these because the
+    # scripts holding them hold other unknowns too, so no witness interprets
+    # end to end — but a single run between two statement boundaries still
+    # pins one opcode when everything else in it is known.
+    #
+    # The consumer named on each line is the whole argument:
+    #   6854/6859   `push $a; push $b; <op>; push 1; branch_equals` — and
+    #               branch_equals pops two ints, one of them that constant.
+    #   7043        `<a string>; push 6; <op>; push 1; branch_equals`. The
+    #               string is `push_string_local` at one site and `~script6690`
+    #               at the other, which returns one (its caller stores the
+    #               result with `pop_string_local`).
+    #   7451        `push $a; <op>; switch` — a switch pops exactly one int.
+    #   7600        four pushes, then a new statement begins; nothing consumes
+    #               a result. Same shape as _7628 beside it.
+    #   7800        a string and an int, then a new statement (`cc_find`,
+    #               `if_sethide`) which supplies its own operands.
+    #   7803/7804/7805/7813/7814
+    #               one int in, one out: each is followed either by
+    #               `pop_int_local` directly or by `push 1; add`. 7813/7814 sit
+    #               under `~script1045`, whose trailer says 2i — which is what
+    #               makes the push before them that proc's argument and not
+    #               theirs.
+    #   7807        no push before it at script 7551 pc 0 — it is the script's
+    #               first instruction — and `pop_int_local` after.
+    #   7820        `lowercase` gives it a string, and the `~script46` that
+    #               follows has a 1i/1s trailer: the int can only have come
+    #               from here, so it pushes one and not a string.
+    "obj_find": (["INT", "INT"], ["INT"], False),
+    "obj_findbyindex": (["INT", "INT"], ["INT"], False),
+    # `method3101` handles only 6809, so the official runtime reports 6860 and
+    # 6861 as unhandled. In dormant cache paths both are no-argument int
+    # producers: each follows the other operand and is consumed by multiply.
+    "obj_despawntime": ([], ["INT"], False),
+    "obj_revealtime": ([], ["INT"], False),
+    "highlight_group_get": (["STRING", "INT"], ["INT"], False),
+    "minimenu_typeat": (["INT"], ["INT"], False),
+    # The official rev-239 dispatch (`method12357`) handles only 7463. Targeted
+    # `cs2trace` runs therefore record this 7453..7456 block as unhandled
+    # (return code 2,
+    # no stack mutation). The cache nevertheless contains them behind paths
+    # that are unreachable in this client build. Their call sites settle the
+    # compiler contract: each consumes one int and leaves the int immediately
+    # compared with 1.
+    "minimenu_findnpcat": (["INT"], ["INT"], False),
+    "minimenu_findlocat": (["INT"], ["INT"], False),
+    "minimenu_findobjat": (["INT"], ["INT"], False),
+    "minimenu_findplayerat": (["INT"], ["INT"], False),
+    "loottracker_sourceadd": (["STRING", "INT", "INT", "INT"], [], False),
+    "hiscore_lookup": (["STRING", "INT"], [], False),
+    "hiscore_getskillrank": (["INT"], ["INT"], False),
+    "hiscore_getgamerank": (["INT"], ["INT"], False),
+    "hiscore_getskillxp": (["INT"], ["INT"], False),
+    # `method11128` likewise implements only 7900/7901; the official runtime
+    # refuses this older hiscores block. Corpus inference supplies the dormant
+    # source contract: lookup by game index returns rank, overall returns the
+    # rank and split score, and 7816 supplies a status/result int.
+    "hiscore_getgamecompletions": (["INT"], ["INT"], False),
+    "hiscore_getoverallrank": ([], ["INT"], False),
+    "hiscore_getoverallxp": ([], ["INT", "INT"], False),
+    "hiscore_getbossrank": (["INT"], ["INT"], False),
+    "hiscore_getbosskills": (["INT"], ["INT"], False),
+    "hiscore_getgrouptotalxp": ([], ["INT"], False),
+    "hiscore_getmembercontributedxp_byname": (["STRING"], ["INT"], False),
+
+    # ---------------------------------------------------------------
+    # Measured in the running client, not read from it.
+    #
+    # `Deobfuscator/instr/src/CS2Trace.java` samples the three operand-stack
+    # pointers either side of every executed opcode; `3draster` drives the
+    # client through all 9,725 scripts in the cache with
+    # `tools/perf/cs2_sweep.sh`, so an opcode no screen reaches still runs.
+    # 560 opcodes executed; 307 of them agreed with this table exactly, which
+    # is the reason to believe the disagreements.
+    #
+    # A measured *net* is `pushes - pops`, so it does not by itself split an
+    # entry into arguments and results. Where the split below is stated it is
+    # because only one split is consistent with both the net and the handler
+    # source; where it was not, the entry was left alone rather than guessed.
+    "cc_setop": (["INT", "STRING"], [], True),            # net (-1,-1) x51047
+    # method12438 pops the explicit COMPONENT in the >=2000 preamble, then
+    # case 1300 pops OPINDEX and OP. Keep Command.kt's source/bytecode order:
+    # the measured stack deltas establish the banks, but cannot establish how
+    # values from the independent int and string stacks were interleaved.
+    "if_setop": (["INT", "STRING", "COMPONENT"], [], False),  # net (-2,-1) x3725
+    "if_getop": (["COMPONENT", "INT"], ["STRING"], False),    # net (-2,+1) x11
+    "oc_iop": (["OBJ", "INT"], ["STRING"], False),        # net (-2,+1) x47
+    # The trace settles the physical int bank; Command.kt and the client both
+    # settle its meaning as BOOLEAN. Keeping that prototype lets decompiled
+    # source print `true`/`false` and lets the compiler resolve those literals.
+    "openurl": (["STRING", "BOOLEAN"], [], False),        # net (-1,-1) x11
+    "mes": (["STRING"], [], False),                       # net (0,-1)
+    "friendschat_kickuser": (["STRING"], [], False),             # net (0,-1)
+    "chat_sendpublic": (["STRING", "INT"], [], False),    # net (-1,-1)
+    "chat_playername": ([], ["STRING"], False),           # net (0,+1) x186
+    "friendschat_getchatownername": ([], ["STRING"], False),     # net (0,+1) x7
+    "pronoun": ([], ["INT"], False),                        # net (+1,0) x30 — was a string
+    "worldmap_getmap": (["INT"], ["INT"], False),                   # net (0,0)
+    "mec_category": (["INT"], ["INT"], False),            # net (0,0)
+    "array_sort": (["STRING", "STRING"], [], False),           # net (0,-2) x26
+    "array_randomise": (["STRING", "INT", "INT"], [], False),       # net (-2,-1)
+    # method10962/5031 pushes into independent physical banks in this source
+    # order. The interleaving matters to the tuple reconstructed by the IR.
+    "chat_gethistory_byuid": (["INT"], ["INT", "INT", "STRING", "STRING",
+                                          "STRING", "INT", "STRING", "INT"], False),
+    # Rev-239 gameframe scripts pass (x, y) and consume the resulting bound.
+    "sidebar_setwidth": (["INT", "INT"], [], False),
+    # The neighbouring safe-area host command consumes its mode selector. The
+    # vendored camera-era name/signature predates this opcode assignment.
+    "sidebar_clearwidth": (["INT"], [], False),
+
+    # ---------------------------------------------------------------
+    # Active-component ("dot") forms these rows had marked False.
+    #
+    # For a cc_* command the operand byte is not data, it is the flag that picks
+    # `.cc_foo` over `cc_foo` — the interpreter builds it from
+    # `Script.field272[pc]` and passes it to the group handler as `var2`, which
+    # selects `Statics.field5113` over `field2369`. The generator already writes
+    # `dot = 100 <= opcode < 2000` for anything it takes from the client's stack
+    # table; these eleven came from LOCAL_BASIC instead, which had to state it
+    # and stated False.
+    #
+    # A False here is not a harmless mislabel: the decompiler stops printing the
+    # '.', so the compiler writes operand 0 where the cache has 1.
+    #
+    # Membership is the client's, not the operand's. Thirteen BASIC opcodes hold
+    # operand 1 somewhere in cache.osrs239, but "holds a 1" is not evidence of a
+    # dot form, and taking it as such is wrong for four of them:
+    #
+    #   102  cc_deleteall  `method4548`'s case for it pops the component id off
+    #                      the int stack and never touches `var2`. Not a dot
+    #                      form, on the client's own evidence. (The RuneStar
+    #                      reference happens to agree; the client is why.)
+    #   103                no case in this client and no preamble flag: unknown,
+    #                      so left alone rather than guessed either way.
+    #   4123, 4124         outside the cc_ range, and `method5814` never reads
+    #                      `var2` — the client ignores that byte for them. Worth
+    #                      22 scripts, deliberately not taken: printing
+    #                      `._4123` would assert an active-component form that
+    #                      does not exist.
+    #
+    # The nine below are each confirmed at the client: 209/210/212/213 and 1927
+    # read `var2` in their own case, and 1128/1506/1624/1704 are in ranges whose
+    # handler preamble (method4754/method1470/method6296/method12337) selects
+    # field5113 over field2369 before it looks at the opcode at all.
+    "cc_parentid": ([], ["INT"], True),
+    "cc_find_param":
+        (["COMPONENT", "INT", "INT", "INT", "INT", "INT", "INT"], ["INT"], True),
+    "cc_assert": ([], [], True),
+    "cc_sethttpsprite": (["STRING"], [], True),
+    "cc_crmview_dismiss": ([], ["INT"], True),
+    "cc_setlocmodel": (["INT"], [], True),
+    "cc_query": (["INT"], ["INT"], True),
+    "if_query_next": ([], ["INT"], True),
+    "cc_setarc": (["INT", "INT"], [], True),
+    "cc_getparentlayer": ([], ["INT"], True),
+    "cc_getarcstart": ([], ["INT"], True),
+    "cc_getarcend": ([], ["INT"], True),
+    "cc_input_getfocus": ([], ["INT"], True),
+    "cc_input_getcaretposition": ([], ["INT"], True),
+    "cc_setparam": (["INT", "NONE", "INT"], [], True),
+    # method1005/1927 reads only the implicit active component; opcode 2927's
+    # explicit component is supplied by the generic IF_* preamble.
+    "cc_callonresize": ([], [], True),
+}
+
+# opcode -> handler kind, for commands whose stack shape is not a fixed
+# signature at all. `gen_cs2_tables.py` applies these last, over anything the
+# vendored tables or the client stack table said.
+#
+# The DB_* family is the whole of it. A `dbcolumn` literal packs
+# (table << 12) | (column << 4) | (field + 1), and field 0 means "the whole
+# tuple" -- so `db_getfield` on a four-field column pushes four values, of that
+# column's four types, while the same opcode on a single-field column pushes
+# one. The client resolves it from the dbtable config at run time
+# (src/game/rs_cs2_host.c exec_db); the decompiler resolves it from the same
+# config through RSCache_CS2_DecompileOptions.db_columns.
+#
+# Measured on cache.osrs239: 0xa6200 (table 166, column 32, whole tuple) is
+# followed by four int pops at every one of its 26 call sites, and 0xa6204
+# (the same column, field 3) by exactly one at all 11 of its. A fixed signature
+# cannot be right for both, and the one the stack table carried -- three in,
+# one out -- desynchronised the operand stack of every script that read a
+# multi-field column, which is what took script 7603 and 79 others.
+LOCAL_KINDS: dict[int, str] = {
+    # Statics.method4548/210 pops two trailing base-type ids, conditionally pops
+    # one value for each non--1 id, then pops two params and a component root.
+    210: "FIND_PARAM",
+    216: "TYPED_POP",
+    2929: "DESCRIPTOR_ARGS",
+    1703: "ACTIVE_PARAM",
+    2703: "COMPONENT_PARAM",
+    1704: "TYPED_POP",
+    2704: "TYPED_POP",
+    8005: "TYPED_POP",
+    8006: "TYPED_POP",
+    8007: "TYPED_POP",
+    8010: "TYPED_POP",
+    8024: "TYPED_POP",
+    8025: "TYPED_POP",
+    # method4380 parses the descriptor/script-id payload just like the other
+    # 1400-range callbacks; the vendored table mislabeled these as Basic.
+    1434: "CLIENTSCRIPT",
+    1435: "CLIENTSCRIPT",
+    7502: "DB_GETFIELD",
+    7500: "DB_FIND",
+    7507: "DB_FIND",
+    7508: "DB_FIND",
+    # 7509 is the no-count REFINE (a typed find); 7510 is the no-count LISTALL,
+    # one dbtable. These two used to be the other way round, matching a host
+    # that had the branches swapped as well.
+    7509: "DB_FIND",
+    # The long stack's assignment forms: one value moved between the stack and a
+    # varc (51/52), a varp (64/65), a local (66/67), or a literal (61).
+    51: "ASSIGN",
+    52: "ASSIGN",
+    61: "ASSIGN",
+    64: "ASSIGN",
+    65: "ASSIGN",
+    66: "ASSIGN",
+    67: "ASSIGN",
+    # 8026 array_delete and 8009 array_max end in `method7522`, which pushes onto
+    # the array's own element stack. The interpreter reads that stack off the
+    # value's consumer; 1 of 241's 62 array_delete sites is a string array.
+    8009: "ARRAY_ELEMENT",
+    8026: "ARRAY_ELEMENT",
+}
+
+# opcode -> (kind, extra) for the kinds whose `extra` names a stack: the long
+# stack's discard and its six compare-and-branch forms (deob core loop, 62 and
+# 68..73), which the vendored tables never carried.
+LOCAL_STACK_KINDS: dict[int, tuple[str, str]] = {
+    62: ("DISCARD", "RSCACHE_CS2_STACK_LONG"),
+    68: ("BRANCH_COMPARE", "RSCACHE_CS2_STACK_LONG"),
+    69: ("BRANCH_COMPARE", "RSCACHE_CS2_STACK_LONG"),
+    70: ("BRANCH_COMPARE", "RSCACHE_CS2_STACK_LONG"),
+    71: ("BRANCH_COMPARE", "RSCACHE_CS2_STACK_LONG"),
+    72: ("BRANCH_COMPARE", "RSCACHE_CS2_STACK_LONG"),
+    73: ("BRANCH_COMPARE", "RSCACHE_CS2_STACK_LONG"),
+}

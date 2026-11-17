@@ -25,7 +25,7 @@ $ErrorActionPreference = "Stop"
 $RepoRoot = Split-Path $PSScriptRoot -Parent
 
 if (-not $ClientcDir) {
-    # The vendored submodule, not a sibling checkout. CMake passes
+    # The vendored copy, not a sibling checkout. CMake passes
     # -ClientcDir explicitly; this is only the fallback for running the script
     # by hand, and it should agree with the build rather than with whatever
     # happens to sit next to the repo.
@@ -41,7 +41,7 @@ $RsCacheDir = Join-Path $Third "rscache"
 
 # A HOST compiler, not the cross one -- these tools run here, not on the part.
 #
-# The vendored submodule does NOT supply this: oldschool-clientc gitignores its
+# The vendored copy does NOT supply this either: oldschool-clientc gitignores its
 # `toolchains/` directory, so resolving gcc relative to $ClientcDir worked only
 # while that pointed at a full working copy. Search the places it can actually
 # be instead, and say which ones were tried when it is in none of them.
@@ -67,7 +67,7 @@ if ($AnimSeq) {
     # OSRS-Content keeps ONE content tree, osrs-content/, at its newest cache
     # revision -- it was osrs239-content/ until it moved to 242. A sequence's
     # frame ids only mean something against the cache they came from, so check
-    # [$AnimSeq] still matches ANIM_CACHE_DIR when the submodule is bumped.
+    # [$AnimSeq] still matches ANIM_CACHE_DIR when the vendored copy is updated.
     $seqFile = Join-Path $ClientcDir "OSRS-Content\osrs-content\configs\all.seq"
     if (-not (Test-Path $seqFile)) { throw "all.seq not found at $seqFile" }
     $inRecord = $false

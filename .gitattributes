@@ -1,3 +1,8 @@
 # Meshes: binary for git (no line diffs), whatever the exporter wrote
 *.stl binary
 *.3mf binary
+
+# Vendored oldschool-clientc: out of GitHub language stats; its data files never line-diff
+3rd/oldschool-clientc/** linguist-vendored
+3rd/oldschool-clientc/OSRS-Content/** -diff
+*.digests -diff

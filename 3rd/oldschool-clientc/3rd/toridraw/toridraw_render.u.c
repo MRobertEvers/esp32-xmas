@@ -1,0 +1,2300 @@
+#include "graphics/batch_stats.h"
+#include "graphics/dash_restrict.h"
+#include "graphics/div3.h"
+#include "census/proj_census.h"
+#include "impl/projection/projection.scalar_reference.h"
+#include "graphics/winding.h"
+#include "graphics/ysort_order.h"
+#include "toridraw_math.h"
+#include "toridraw_model_internal.h"
+#include "toridraw_raster_batch.h"
+#include "toridraw_raster_kernel.h"
+#include "toridraw_types.h"
+
+struct ToriDraw_ProjectCensus g_toridraw_project_census;
+
+#include <assert.h>
+#include <limits.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+
+#ifndef VERTEXINT_BITS
+#define VERTEXINT_BITS 16
+#endif
+
+// clang-format off
+#include "impl/projection/projection.perspective.plain.dispatch.u.c"
+#include "impl/projection/zdiv/projection.zdiv.dispatch.u.c"
+/* The per-ISA screen-box sweep behind toridraw_projected_bound. */
+#include "impl/projection/projection.bound.dispatch.u.c"
+// clang-format on
+
+/* The prepared-camera lane -- which ISA supplies one, and the two hooks the
+ * perspective slots below call. The lane owns the entry points (the AArch64
+ * assembly, the SSE2 family) and the inline attributes those slots carry, so
+ * nothing here tests the architecture. */
+#include "impl/projection/projection.perspective.prepared.dispatch.u.c"
+
+/* toridraw_ignore_priorities(), the depth-sort override the face walk reads.
+ * toridraw.c includes this file ahead of this one and it carries an include
+ * guard, so this is a no-op in the unity build -- it is here so the file states
+ * its own dependency and parses standalone, which is what the editor does. */
+#include "impl/raster/dispatch/tri.clip.u.c"
+
+/** Far plane for bounding-cylinder frustum cull. */
+// #define TORIDRAW_CYLINDER_FAR_PLANE_Z 3500
+#define TORIDRAW_CYLINDER_FAR_PLANE_Z 7500
+
+/*
+ * Largest projected coordinate the raster kernels can carry.
+ *
+ * They are 32-bit throughout and step edges in 16.16, so a coordinate `x`
+ * reaches the kernels as `x << 16`, edge deltas as `(dx << 16) / dy`, and the
+ * signed triangle area as a product of two deltas. The area is the binding
+ * term: 2*(2*X)^2 must stay under INT_MAX, so X must stay under 16384. 8192
+ * leaves that a factor of four of headroom for the gouraud colour numerator,
+ * which multiplies a per-vertex colour delta by the same dy, and is still
+ * eleven times the half-width of a 1470-pixel viewport — nothing that could
+ * plausibly be on screen is affected.
+ */
+#define TORIDRAW_PROJECTED_COORD_LIMIT 8192
+/* The reference per-face pick's cursor dilation (toridraw_mouse_roughly_inside_triangle);
+ * defined up here because the projected bound is grown by it too. */
+#define TORIDRAW_PICK_SLOP 5
+/* ToriDraw_RenderModel1CullPoint's widening of the cylinder's screen box: a
+ * pixel for the projection's truncation, and the per-face slop, which lets a
+ * face pick land that far outside the model's own vertices. */
+#define TORIDRAW_CULL_POINT_MARGIN (1 + TORIDRAW_PICK_SLOP)
+
+/*
+ * Everything that exists only to describe a render or a raster pass: the
+ * TORIDRAW_SORT_DEBUG and TORIDRAW_RASTER_DEBUG counters and printers, the
+ * NDJSON record builders, and the two verification harnesses. None of it is
+ * compiled at all in a default build, and what is left at the sites below is a
+ * macro that expands to a constant or to nothing.
+ *
+ * Here rather than higher up: it needs the model accessors,
+ * div3_fast_fixedpoint and TORIDRAW_PROJECTED_COORD_LIMIT above, and every
+ * site that uses it is below.
+ */
+#include "toridraw_debug.u.c"
+
+/* sm_depth_offset_all_zero(): the assert-only invariant check the CSR sort
+ * below leans on. Its own file for the same reason as the block above -- it is
+ * debug code -- but on the plain NDEBUG gate, not the stats gate, because an
+ * ordinary debug build has to have it. */
+#include "toridraw_render_invariants.u.c"
+
+/*
+ * The near plane needed to keep this model's projection inside that limit.
+ *
+ * A perspective vertex projects to `coord * scale / z`, so the only way to
+ * bound the result is to bound how small z can get. `radius` is the
+ * rotation-invariant sphere about the model origin, so every vertex satisfies
+ * |x_cam| <= |center_x| + radius; call that bound M. Clipping at
+ * `M * scale / LIMIT` therefore makes `M * scale / z <= LIMIT` for every
+ * surviving vertex, and the clipped polygon's own vertices sit exactly on that
+ * plane, so they obey it too.
+ *
+ * This is a no-op for anything the reference client could draw: a 500-unit
+ * model a couple of thousand units off-axis resolves to well under the
+ * camera's own near plane. It only bites on imported geometry like the 2012
+ * QBD, whose 4,791-unit animated sphere swallows the camera whole — and there
+ * a vertex one unit past z=50 projects past 90,000, which wraps every edge
+ * stepper it touches and paints the streaks it was reported for.
+ */
+
+static inline int
+toridraw_safe_near_plane_z(
+    const struct ToriDraw_BoundsCylinder* bc,
+    const struct ProjectedVertex* center,
+    int camera_cot16,
+    int camera_near_plane_z)
+{
+    int const scale = toridraw_projection_scale_from_cot16(camera_cot16);
+    int abs_center_x;
+    int abs_center_y;
+    int extent;
+    long long required;
+
+    if( !TORIDRAW_DBG_SAFE_NEAR_ENABLED() )
+        return camera_near_plane_z;
+
+    if( !bc || scale <= 0 )
+        return camera_near_plane_z;
+
+    abs_center_x = center->x < 0 ? -center->x : center->x;
+    abs_center_y = center->y < 0 ? -center->y : center->y;
+    /* Camera roll mixes x into y, so neither axis alone bounds the other after
+     * it. max + min/2 is always at least hypot(x,y) and costs no divide. */
+    extent = abs_center_x > abs_center_y ? abs_center_x + (abs_center_y >> 1)
+                                         : abs_center_y + (abs_center_x >> 1);
+    extent += bc->min_z_depth_any_rotation;
+
+    required = ((long long)extent * scale + TORIDRAW_PROJECTED_COORD_LIMIT - 1) /
+               TORIDRAW_PROJECTED_COORD_LIMIT;
+    if( required <= camera_near_plane_z )
+        return camera_near_plane_z;
+    if( required > INT_MAX )
+        return INT_MAX;
+    return (int)required;
+}
+
+/*
+ * Can any vertex of this model land at or past `near_plane_z`?
+ *
+ * Shared by both projection families because it is geometry, not policy: the
+ * families disagree about WHICH plane to test and what else forces the
+ * clipping kernel, never about this test. `min_z_depth_any_rotation` is the
+ * radius of a sphere about the model origin containing every vertex
+ * (toridraw_model_transform.c:736), and a sphere is the right bound precisely
+ * because it is rotation-invariant -- model pitch/yaw/roll and camera
+ * pitch/yaw/roll all rotate about that origin, so this one test covers the
+ * 6DOF and pitch+yaw paths as well as the yaw-only one. The reference's
+ * `radiusZ` (Client-TS Model.worldRender:1755) cannot: it folds in cos/sin of
+ * the camera pitch and so is only valid for worldRender's yaw-only models.
+ *
+ * `<` and not `<=`, and a bound-less model answers true: both errors have to
+ * fall on the "may clip" side, because the no-clip kernels divide by z
+ * unconditionally and a vertex that sneaks below the plane is a sign-flipped
+ * projection, or a SIGFPE at z == 0.
+ */
+static inline bool
+toridraw_model_reaches_near_plane(
+    const struct ToriDraw_BoundsCylinder* bounds,
+    const struct ProjectedVertex* center,
+    int near_plane_z)
+{
+    assert(center);
+    if( !bounds )
+        return true;
+    return center->z - bounds->min_z_depth_any_rotation < near_plane_z;
+}
+
+static inline int
+ToriDraw_AabbCull(
+    struct ToriDraw_AABB* aabb,
+    struct ToriDraw_ViewPort* view_port,
+    struct ToriDraw_Camera* camera)
+{
+    (void)camera;
+    /*
+     * The box is in FRAMEBUFFER coordinates: every corner was projected to a
+     * viewport-relative position and then offset by x_center / y_center. So
+     * the bounds it is tested against have to be framebuffer coordinates too.
+     * They were not -- `width` and `height` are the viewport's EXTENT, which
+     * is only the right edge when the viewport starts at the framebuffer
+     * origin. The fixed-layout client's 3D view does not:
+     *
+     *     w=513 h=335 x_center=260 y_center=171 clip=[4,517)x[4,339)
+     *
+     * so a model was culled once it passed x = 513 while the raster kept
+     * drawing to 516, and the last four columns -- exactly clip_left -- were
+     * unreachable.
+     *
+     * Nothing was visibly wrong, because the only box that reaches here is the
+     * eight-corner cylinder bound: tens of pixels looser than the geometry
+     * inside it, which absorbed the offset. A box derived from a model's own
+     * projected vertices does not absorb it, and loses that column in every
+     * frame -- which is how this was found.
+     *
+     * Derived from x_center and width rather than read out of clip_left /
+     * clip_right, for two reasons: those are the two fields the projection
+     * itself used, so the spaces agree by construction; and not every caller
+     * fills the clip rectangle (the D3D9 lane leaves it zero, and reading it
+     * there would cull the scene). On this viewport the derivation reproduces
+     * the clip rectangle exactly, and it reduces to the old test whenever the
+     * viewport does start at the origin.
+     */
+    int const left = view_port->x_center - view_port->width / 2;
+    int const top = view_port->y_center - view_port->height / 2;
+    int const right = left + view_port->width;
+    int const bottom = top + view_port->height;
+
+    if( aabb->min_screen_x >= right )
+        return TORIDRAW_CULL_AABB;
+    if( aabb->min_screen_y >= bottom )
+        return TORIDRAW_CULL_AABB;
+    if( aabb->max_screen_x < left )
+        return TORIDRAW_CULL_AABB;
+    if( aabb->max_screen_y < top )
+        return TORIDRAW_CULL_AABB;
+
+    return TORIDRAW_CULL_VISIBLE;
+}
+
+/*
+ * Could the pick point lie on the model at all?
+ *
+ * Asked HERE, where the model's camera-space centre already exists, because
+ * the answer is worth a whole model's projection: a point outside the bound
+ * cannot touch the model, and a caller whose only reason to project was the
+ * pick can stop. The bound is toridraw_cull_point_contains's -- every
+ * projected vertex provably inside it -- widened by TORIDRAW_CULL_POINT_MARGIN
+ * each side: a pixel so the truncation the real projection performs cannot
+ * fall outside it, and the per-face pick's slop, which reaches past the
+ * vertices. A box pick (toridraw_pick_ray_hits_box) is NOT bounded by this:
+ * its box is raised to a minimum size in world units, larger than a small
+ * model, so a caller with a box pick projects regardless.
+ *
+ * `rel_x`/`rel_y` are viewport-CENTRE relative, the space the extents are in
+ * and the space toridraw_projected_model_hit_face converts its argument into.
+ */
+struct ToriDraw_CullPointTest
+{
+    int rel_x;
+    int rel_y;
+    bool contains;
+};
+
+/*
+ * Whether the pick point can lie on a model whose camera-space origin is
+ * `center`: the model's bounding sphere (`sphere`, the bounds cylinder's
+ * centre-to-vertex distance under any rotation) projected with each screen
+ * edge at the depth that pushes it furthest out, widened by
+ * TORIDRAW_CULL_POINT_MARGIN.
+ *
+ * Deliberately NOT the cull's box. That one divides the cylinder's extents by
+ * the centre's depth, so a vertex nearer the camera than the centre projects
+ * outside it -- on a big model up close, by more than the margin -- and a pick
+ * there would be refused. Here an edge on the far side of the centre line is
+ * divided by the nearest depth the sphere reaches (clamped to the near plane)
+ * and one on the near side by the farthest, which bounds every vertex. A
+ * division per edge, but only for a caller that asked about a point.
+ */
+static inline bool
+toridraw_cull_point_contains(
+    const struct ToriDraw_CullPointTest* point,
+    const struct ProjectedVertex* center,
+    int sphere,
+    int near_plane_z,
+    int cot15,
+    bool parallel,
+    int zoom16)
+{
+    long long const x_min = (long long)center->x - sphere;
+    long long const x_max = (long long)center->x + sphere;
+    long long const y_min = (long long)center->y - sphere;
+    long long const y_max = (long long)center->y + sphere;
+    long long lo_x;
+    long long hi_x;
+    long long lo_y;
+    long long hi_y;
+    if( parallel )
+    {
+        lo_x = (x_min * zoom16) >> TORIDRAW_ORTHO_ZOOM_SHIFT;
+        hi_x = (x_max * zoom16) >> TORIDRAW_ORTHO_ZOOM_SHIFT;
+        lo_y = (y_min * zoom16) >> TORIDRAW_ORTHO_ZOOM_SHIFT;
+        hi_y = (y_max * zoom16) >> TORIDRAW_ORTHO_ZOOM_SHIFT;
+    }
+    else
+    {
+        long long z_near = (long long)center->z - sphere;
+        long long z_far = (long long)center->z + sphere;
+        long long const nx_min = SCALE_UNIT((x_min * cot15) >> 15);
+        long long const nx_max = SCALE_UNIT((x_max * cot15) >> 15);
+        long long const ny_min = SCALE_UNIT((y_min * cot15) >> 15);
+        long long const ny_max = SCALE_UNIT((y_max * cot15) >> 15);
+        if( z_near < near_plane_z )
+            z_near = near_plane_z;
+        if( z_far < z_near )
+            z_far = z_near;
+        assert(z_near > 0);
+        lo_x = nx_min / (nx_min < 0 ? z_near : z_far);
+        hi_x = nx_max / (nx_max > 0 ? z_near : z_far);
+        lo_y = ny_min / (ny_min < 0 ? z_near : z_far);
+        hi_y = ny_max / (ny_max > 0 ? z_near : z_far);
+    }
+    return point->rel_x >= lo_x - TORIDRAW_CULL_POINT_MARGIN &&
+        point->rel_x <= hi_x + TORIDRAW_CULL_POINT_MARGIN &&
+        point->rel_y >= lo_y - TORIDRAW_CULL_POINT_MARGIN &&
+        point->rel_y <= hi_y + TORIDRAW_CULL_POINT_MARGIN;
+}
+
+/*
+ * always_inline: this is called once per model from ToriDraw_ProjectWithVTable
+ * and once from ToriDraw_RenderModel1CullPoint, and out of line it was a
+ * 1.2 KB function with a nine-register push paid by every one of the ~1,640
+ * models a frame reaching the gate. Inlined, its two callers' frames absorb
+ * it and the early-reject paths return without ever having pushed.
+ *
+ * `model` is the resolved read view (ToriDraw_ModelRead), resolved once by
+ * the caller rather than switched on the handle kind here and again in every
+ * accessor below.
+ */
+static inline int __attribute__((always_inline))
+ToriDraw_FastCull(
+    const struct ToriDraw_Scene* scene,
+    struct ToriDraw_ViewPort* view_port,
+    const struct ToriDraw_Model* model,
+    struct ToriDraw_Position* position,
+    struct ToriDraw_Camera* camera,
+    struct ProjectedVertex* projected_vertex,
+    struct ToriDraw_CullPointTest* point)
+{
+    if( point )
+        point->contains = false;
+    assert(model);
+    int scene_x = position->x;
+    int scene_y = position->y;
+    int scene_z = position->z;
+    int near_plane_z = camera->near_plane_z;
+
+    /*
+     * The camera's trig and projection scale, off the prepared block when one
+     * was published for THIS camera (the same pointer test the kernels make)
+     * and off the tables otherwise. The block holds exactly the table values
+     * and cot16 >> 1 -- ToriDraw_ScenePrepareProjectionCamera writes them from
+     * the same reads -- so the two arms agree bit for bit; the prepared one
+     * just spends one cache line instead of four dependent table loads and the
+     * cot ladder, once per model.
+     */
+    int cos_camera_pitch;
+    int sin_camera_pitch;
+    int cos_camera_yaw;
+    int sin_camera_yaw;
+    int cot15;
+    if( scene->projection_prepared_camera_source == camera )
+    {
+        const struct ToriDraw_ProjectionPreparedCamera* prep = &scene->projection_prepared_camera;
+        cos_camera_pitch = prep->cos_pitch[0];
+        sin_camera_pitch = prep->sin_pitch[0];
+        cos_camera_yaw = prep->cos_yaw[0];
+        sin_camera_yaw = prep->sin_yaw[0];
+        cot15 = prep->cot15[0];
+    }
+    else
+    {
+        int const camera_pitch = ToriDraw_NormalizeAngle(camera->pitch);
+        int const camera_yaw = ToriDraw_NormalizeAngle(camera->yaw);
+        cos_camera_pitch = ToriDraw_ReadCosTable(camera_pitch);
+        sin_camera_pitch = ToriDraw_ReadSinTable(camera_pitch);
+        cos_camera_yaw = ToriDraw_ReadCosTable(camera_yaw);
+        sin_camera_yaw = ToriDraw_ReadSinTable(camera_yaw);
+        cot15 = toridraw_projection_cot16(
+                    camera->projection_mode, camera->projection_scale, camera->fov_rpi2048) >>
+                1;
+    }
+
+    /*
+     * The model's origin in camera space: project_orthographic_fast on the
+     * point (0, 0, 0). The model rotation of the zero vector is the zero
+     * vector, so no model-yaw trig is read and only the camera's two
+     * rotations of the translate remain -- the same expressions, the same
+     * shifts, in the same order, so the result is the one the general
+     * routine gives (projection.u.c project_orthographic_fast_trig).
+     */
+    int const x_scene = (scene_x * cos_camera_yaw + scene_z * sin_camera_yaw) >> 16;
+    int const z_scene = (scene_z * cos_camera_yaw - scene_x * sin_camera_yaw) >> 16;
+    projected_vertex->x = x_scene;
+    projected_vertex->y = (scene_y * cos_camera_pitch - z_scene * sin_camera_pitch) >> 16;
+    projected_vertex->z = (scene_y * sin_camera_pitch + z_scene * cos_camera_pitch) >> 16;
+
+    /* A model that never had ToriDraw_ModelSetBoundsCylinder run is a
+     * legitimate (if useless) runtime state, answered as it always was. */
+    if( !model->has_bounds_cylinder )
+        return TORIDRAW_CULL_ERROR;
+    const struct ToriDraw_BoundsCylinder* const bc = &model->bounds_cylinder;
+
+    int model_edge_radius = bc->radius;
+
+    int mid_z = projected_vertex->z;
+    int max_z = model_edge_radius + mid_z;
+    if( max_z < near_plane_z )
+        return TORIDRAW_CULL_FAST;
+
+    /* worldRender culls midZ>=3500; objRender / inventory icons do not.
+     * Icon cameras already use near_plane_z=1 (world uses 50). */
+    if( near_plane_z >= 50 && mid_z > TORIDRAW_CYLINDER_FAR_PLANE_Z )
+        return TORIDRAW_CULL_FAST;
+
+    int mid_x = projected_vertex->x;
+    int mid_y = projected_vertex->y;
+
+    bool const parallel = toridraw_projection_is_parallel(camera->projection_mode);
+    int const zoom16 = camera->parallel_zoom16 ? camera->parallel_zoom16 : TORIDRAW_ORTHO_ZOOM_UNIT;
+
+    /* Depth only reaches the perspective extents through the divide; a parallel
+     * projection's screen size is the same at any depth, so the clamp below --
+     * which exists purely to keep that divisor off the near plane -- would be
+     * meaningless there. */
+    if( !parallel && mid_z < near_plane_z )
+        mid_z = near_plane_z;
+
+    int ortho_screen_x_min = mid_x - model_edge_radius;
+    int ortho_screen_x_max = mid_x + model_edge_radius;
+    int screen_edge_width = view_port->width >> 1;
+    int screen_edge_height = view_port->height >> 1;
+
+/* The y extent, derived only once the x test has passed: two trig reads
+ * and two multiplies a model rejected on x never needs. */
+#define TORIDRAW_FASTCULL_Y_EXTENT()                                                               \
+    int model_center_to_top_edge = bc->center_to_top_edge;                                         \
+    int model_center_to_bottom_edge = (bc->center_to_bottom_edge * cos_camera_pitch >> 16) +       \
+                                      (model_edge_radius * sin_camera_pitch >> 16);                \
+    int ortho_screen_y_min = mid_y - abs(model_center_to_bottom_edge);                             \
+    int ortho_screen_y_max = mid_y + abs(model_center_to_top_edge)
+
+    if( parallel )
+    {
+        int screen_x_min_unoffset = (ortho_screen_x_min * zoom16) >> TORIDRAW_ORTHO_ZOOM_SHIFT;
+        int screen_x_max_unoffset = (ortho_screen_x_max * zoom16) >> TORIDRAW_ORTHO_ZOOM_SHIFT;
+        if( screen_x_min_unoffset > screen_edge_width ||
+            screen_x_max_unoffset < -screen_edge_width )
+            return TORIDRAW_CULL_FAST;
+
+        TORIDRAW_FASTCULL_Y_EXTENT();
+        int screen_y_min_unoffset = (ortho_screen_y_min * zoom16) >> TORIDRAW_ORTHO_ZOOM_SHIFT;
+        int screen_y_max_unoffset = (ortho_screen_y_max * zoom16) >> TORIDRAW_ORTHO_ZOOM_SHIFT;
+        if( screen_y_min_unoffset > screen_edge_height ||
+            screen_y_max_unoffset < -screen_edge_height )
+            return TORIDRAW_CULL_FAST;
+
+        if( point )
+            point->contains = toridraw_cull_point_contains(
+                point, projected_vertex, bc->min_z_depth_any_rotation, near_plane_z, cot15, true,
+                zoom16);
+        return TORIDRAW_CULL_VISIBLE;
+    }
+
+    /*
+     * Four perspective divides, asked as four multiplies.
+     *
+     * The old form projected each extent -- project_divide, i.e.
+     * trunc(((p * cot15) >> 15) * 512 / mid_z) -- and compared the pixel
+     * against the half-width. Nothing consumed the pixel; the comparison was
+     * the whole product, and this is the only site in the client that ran an
+     * integer divide per model on the hot path. So the divide is cancelled
+     * across the inequality instead. With z > 0, W >= 0 and truncation toward
+     * zero:
+     *
+     *     trunc(n / z) >  W   <=>   n >=  (W + 1) * z
+     *     trunc(n / z) < -W   <=>   n <= -(W + 1) * z
+     *
+     * (the first: a positive quotient truncates down, so it exceeds W exactly
+     * when the real quotient reaches W + 1; the second is its mirror). Both
+     * sides are exact integers, so this is the same predicate the divide
+     * answered, bit for bit, on every input -- not an approximation of it.
+     * `n` is formed by the same int arithmetic project_divide used, wrapping
+     * and all, so a value that overflowed there overflows identically here.
+     *
+     * mid_z is at least near_plane_z after the clamp above, and a perspective
+     * camera's near plane is at least 1 (ToriDraw_Project guards the < 1 case
+     * onto the clipping family, and project_divide asserted z > 0); a
+     * non-positive z would have been a divide by zero on the old path, so it
+     * is asserted rather than handled.
+     */
+    assert(mid_z > 0);
+    {
+        long long const z_w = (long long)(screen_edge_width + 1) * mid_z;
+        long long const z_h = (long long)(screen_edge_height + 1) * mid_z;
+        int const qx_min = (ortho_screen_x_min * cot15) >> 15;
+        int const qx_max = (ortho_screen_x_max * cot15) >> 15;
+        long long const nx_min = SCALE_UNIT(qx_min);
+        long long const nx_max = SCALE_UNIT(qx_max);
+
+        if( nx_min >= z_w || nx_max <= -z_w )
+            return TORIDRAW_CULL_FAST;
+
+        TORIDRAW_FASTCULL_Y_EXTENT();
+        int const qy_min = (ortho_screen_y_min * cot15) >> 15;
+        int const qy_max = (ortho_screen_y_max * cot15) >> 15;
+        long long const ny_min = SCALE_UNIT(qy_min);
+        long long const ny_max = SCALE_UNIT(qy_max);
+
+        if( ny_min >= z_h || ny_max <= -z_h )
+            return TORIDRAW_CULL_FAST;
+
+        if( point )
+            point->contains = toridraw_cull_point_contains(
+                point, projected_vertex, bc->min_z_depth_any_rotation, near_plane_z, cot15, false,
+                zoom16);
+    }
+#undef TORIDRAW_FASTCULL_Y_EXTENT
+
+    return TORIDRAW_CULL_VISIBLE;
+}
+
+/*
+ * The model's screen box, off the coordinates the projection just wrote.
+ *
+ * This replaced ToriDraw_CalculateCylinderAabb8point, which projected eight
+ * cylinder corners per model BEFORE the model was projected, to cull it. Two
+ * measurements retired it. A projection census on the Grand Exchange ground
+ * orbit (graphics/proj_census.h, TORIDRAW_PROJECTION_CENSUS_AABB) put the corner
+ * box's reject rate at 0.05% of the models that reached it -- 0.00% for most
+ * vertex counts, never above 0.9% -- because the cylinder test in
+ * ToriDraw_FastCull has already answered the question it asks. And
+ * test-proj-model-bench put the corner box at 30 of the 56 ns a four-vertex
+ * tile spent being projected, which is 60% of all models. A bound that costs
+ * eight projected corners and rejects one model in two thousand is not a cull;
+ * it is a tax. Counting projected points for a model of V vertices:
+ *
+ *     corner box:   8 + V  (survives, 99.95%)      8  (rejected, 0.05%)
+ *     this:             V                          V
+ *
+ * which favours this for every V below 8 / 0.0005 = 16,000 vertices; the
+ * largest model in the cache is a tenth of that.
+ *
+ * WHAT THE BOX IS FOR, and why it is dilated. Two consumers:
+ *
+ *   - ToriDraw_AabbCull: a model is dropped when the box is wholly off the
+ *     viewport. A triangle's screen image is the triangle of its projected
+ *     vertices (test-raster-overshoot: the raster never paints outside that
+ *     hull), so a box over the vertices is exact for the pixels. Exact is
+ *     ALSO the reason for the slop below.
+ *   - ToriDraw_ProjectedModelContainsAabb: the prefilter in front of the
+ *     per-face pick, whose ROUGH test accepts a cursor up to
+ *     TORIDRAW_PICK_SLOP outside a face's own box. The old corner box was
+ *     tens of pixels looser than the geometry and absorbed that; an exact
+ *     box would not, and a click four pixels outside a fence post that used
+ *     to pick would stop picking. So the box is grown by the slop, once,
+ *     here: every prefilter that passed before still passes, and the cull
+ *     keeps a model whose silhouette is within five pixels of the edge --
+ *     which is the model a click at the edge could still pick.
+ *
+ * A near-clipped vertex is parked at TORIDRAW_SCREEN_X_NEAR_CLIPPED with an
+ * UNDIVIDED y, so no box over it means anything; and the near-clip rebuild
+ * (toridraw_triangle_clip.u.c) can put pixels well outside the in-front
+ * vertices. Any such vertex makes the box the whole plane -- the same
+ * concession the corner box made when a corner sat behind the near plane.
+ * Only the clipping family can write the sentinel, and the no-clip family
+ * can legitimately project a real -5000, so the test is gated on
+ * scene->near_clipped exactly as every other sentinel consumer is.
+ *
+ * Four lanes at a time where the ISA has a lane-wise min/max; the lanes
+ * themselves live in graphics/projection_bound.u.c and the ISA files behind
+ * it, so nothing arch-specific is inlined here. Everything below the sweep --
+ * the scalar tail, the sentinel test, the dilation, the viewport offset -- is
+ * the same code on every lane.
+ */
+static inline void
+toridraw_projected_bound(
+    struct ToriDraw_Scene* scene,
+    const struct ToriDraw_ViewPort* view_port,
+    int vertex_count)
+{
+    const int* const svx = scene->screen_vertices_x;
+    const int* const svy = scene->screen_vertices_y;
+    struct ToriDraw_AABB* const aabb = &scene->aabb;
+    struct ToriDraw_ScreenBound box;
+    int box_clipped = 0;
+    int i;
+
+    assert(scene);
+    assert(view_port);
+
+    aabb->kind = TORIDRAW_AABB_KIND_VERTICES;
+
+    if( vertex_count <= 0 )
+    {
+        /* Nothing to bound and nothing to draw; stays visible, as it did
+         * under the corner box, and picks nothing. */
+        aabb->min_screen_x = INT_MIN / 2;
+        aabb->max_screen_x = INT_MAX / 2;
+        aabb->min_screen_y = INT_MIN / 2;
+        aabb->max_screen_y = INT_MAX / 2;
+        scene->projected_box[0] = INT_MIN / 2;
+        scene->projected_box[1] = INT_MAX / 2;
+        scene->projected_box[2] = INT_MIN / 2;
+        scene->projected_box[3] = INT_MAX / 2;
+        return;
+    }
+
+    box.min_x = svx[0];
+    box.max_x = svx[0];
+    box.min_y = svy[0];
+    box.max_y = svy[0];
+
+    if( scene->projection_bound_vertices > 0 )
+    {
+        /* A prepared kernel already reduced every full block into four
+         * lanes; fold the lanes, then the tail below finishes the last 0..3. */
+        assert((scene->projection_bound_vertices & 3) == 0);
+        assert(scene->projection_bound_vertices <= vertex_count);
+        toridraw_bound_fold_prepared(&scene->projection_bound[0][0], &box);
+        i = scene->projection_bound_vertices;
+    }
+    else
+    {
+        /* Zero where the lane declined, and the tail below is then the whole
+         * sweep; otherwise the count of leading vertices it consumed, having
+         * written every field of `box` from exactly those. */
+        i = toridraw_bound_sweep(svx, svy, vertex_count, &box);
+    }
+
+    /* The scalar tail -- or the whole model, where no lane path applied.
+     * `else if` is right: min <= max always, so a new minimum cannot also be
+     * a new maximum. */
+    for( ; i < vertex_count; i++ )
+    {
+        int const sx = svx[i];
+        int const sy = svy[i];
+        if( sx < box.min_x )
+            box.min_x = sx;
+        else if( sx > box.max_x )
+            box.max_x = sx;
+        if( sy < box.min_y )
+            box.min_y = sy;
+        else if( sy > box.max_y )
+            box.max_y = sy;
+    }
+
+    /* The raw box, for the face sort's extent classification. */
+    /* The raw box, for the face sort's extent classification -- the struct's
+     * own layout, copied whole so the lane's folded vector store above lands
+     * here as one load and one store rather than four lane extracts. */
+    _Static_assert(
+        sizeof(scene->projected_box) == sizeof(box), "projected_box is a ToriDraw_ScreenBound");
+    memcpy(scene->projected_box, &box, sizeof(box));
+
+    /* The sentinel is the smallest x any clipped model can hold, so if one
+     * is present it IS the minimum -- one compare after the sweep, not one
+     * per vertex. */
+    if( scene->near_clipped && box.min_x == TORIDRAW_SCREEN_X_NEAR_CLIPPED )
+        box_clipped = 1;
+
+    if( box_clipped )
+    {
+        aabb->min_screen_x = INT_MIN / 2;
+        aabb->max_screen_x = INT_MAX / 2;
+        aabb->min_screen_y = INT_MIN / 2;
+        aabb->max_screen_y = INT_MAX / 2;
+    }
+    else
+    {
+        aabb->min_screen_x = box.min_x + view_port->x_center - TORIDRAW_PICK_SLOP;
+        aabb->max_screen_x = box.max_x + view_port->x_center + TORIDRAW_PICK_SLOP;
+        aabb->min_screen_y = box.min_y + view_port->y_center - TORIDRAW_PICK_SLOP;
+        aabb->max_screen_y = box.max_y + view_port->y_center + TORIDRAW_PICK_SLOP;
+    }
+}
+
+#include "impl/facesort/facesort.bucket.full.scalar.u.c"
+
+
+#include "impl/facesort/facesort.bucket.small.scalar.u.c"
+
+
+#include "impl/facesort/facesort.dispatch.u.c"
+
+/*
+ * The model-shape dispatch, written out once per near-clip family.
+ *
+ * The near-clip question is answered once per model in ToriDraw_Project and
+ * the answer picks one of these two; below this point every kernel is
+ * specialized, so no `may_clip` argument is threaded down and nothing tests it
+ * per vertex. Passing a flag down instead and trusting the optimizer to
+ * unswitch it was measurably worse: it held at -O2/-O3 but left the scalar
+ * path ~20%% slower than the code it replaced at -O1, where the flag stopped
+ * being a constant and blocked auto-vectorization.
+ */
+/* Models that can reach behind the near plane, portable ladder only. */
+static inline void
+toridraw_project_vertices_clip_portable(
+    struct ToriDraw_Scene* scene,
+    struct ToriDraw_ModelHandle hnd,
+    struct ToriDraw_Position* position,
+    struct ToriDraw_Camera* camera,
+    int model_pitch,
+    int model_yaw,
+    int model_roll,
+    int camera_roll,
+    int model_mid_z)
+{
+    /* Full 6DOF when model/camera roll is set (obj-icon zan2d, etc.). yaw-only and
+     * pitch+yaw keep the SIMD fused paths; array6_fused matches v0 Dash. */
+    if( model_roll != 0 || camera_roll != 0 )
+    {
+        if( model_has_textures(hnd) )
+        {
+            TORIDRAW_PROJECTION_CENSUS_RECORD(
+                TORIDRAW_PROJECTION_K_6DOF_TEX, 1, model_vertex_count(hnd));
+            project_vertices_array6_fused_clip(
+                scene->orthographic_vertices_x,
+                scene->orthographic_vertices_y,
+                scene->orthographic_vertices_z,
+                scene->screen_vertices_x,
+                scene->screen_vertices_y,
+                scene->screen_vertices_z,
+                model_vertices_x(hnd),
+                model_vertices_y(hnd),
+                model_vertices_z(hnd),
+                model_vertex_count(hnd),
+                model_pitch,
+                model_yaw,
+                model_roll,
+                model_mid_z,
+                position->x,
+                position->y,
+                position->z,
+                scene->projection_near_plane_z,
+                toridraw_projection_cot16(
+                    camera->projection_mode, camera->projection_scale, camera->fov_rpi2048),
+                camera->pitch,
+                camera->yaw,
+                camera_roll);
+        }
+        else
+        {
+            TORIDRAW_PROJECTION_CENSUS_RECORD(
+                TORIDRAW_PROJECTION_K_6DOF_NOTEX, 1, model_vertex_count(hnd));
+            project_vertices_array6_fused_notex_clip(
+                scene->screen_vertices_x,
+                scene->screen_vertices_y,
+                scene->screen_vertices_z,
+                model_vertices_x(hnd),
+                model_vertices_y(hnd),
+                model_vertices_z(hnd),
+                model_vertex_count(hnd),
+                model_pitch,
+                model_yaw,
+                model_roll,
+                model_mid_z,
+                position->x,
+                position->y,
+                position->z,
+                scene->projection_near_plane_z,
+                toridraw_projection_cot16(
+                    camera->projection_mode, camera->projection_scale, camera->fov_rpi2048),
+                camera->pitch,
+                camera->yaw,
+                camera_roll);
+        }
+    }
+    else if( model_pitch != 0 )
+    {
+        if( model_has_textures(hnd) )
+        {
+            TORIDRAW_PROJECTION_CENSUS_RECORD(
+                TORIDRAW_PROJECTION_K_PITCHYAW_TEX, 1, model_vertex_count(hnd));
+            project_vertices_array_pitchyaw_fused_clip(
+                scene->orthographic_vertices_x,
+                scene->orthographic_vertices_y,
+                scene->orthographic_vertices_z,
+                scene->screen_vertices_x,
+                scene->screen_vertices_y,
+                scene->screen_vertices_z,
+                model_vertices_x(hnd),
+                model_vertices_y(hnd),
+                model_vertices_z(hnd),
+                model_vertex_count(hnd),
+                model_pitch,
+                model_yaw,
+                model_mid_z,
+                position->x,
+                position->y,
+                position->z,
+                scene->projection_near_plane_z,
+                toridraw_projection_cot16(
+                    camera->projection_mode, camera->projection_scale, camera->fov_rpi2048),
+                camera->pitch,
+                camera->yaw);
+        }
+        else
+        {
+            TORIDRAW_PROJECTION_CENSUS_RECORD(
+                TORIDRAW_PROJECTION_K_PITCHYAW_NOTEX, 1, model_vertex_count(hnd));
+            project_vertices_array_pitchyaw_fused_notex_clip(
+                scene->screen_vertices_x,
+                scene->screen_vertices_y,
+                scene->screen_vertices_z,
+                model_vertices_x(hnd),
+                model_vertices_y(hnd),
+                model_vertices_z(hnd),
+                model_vertex_count(hnd),
+                model_pitch,
+                model_yaw,
+                model_mid_z,
+                position->x,
+                position->y,
+                position->z,
+                scene->projection_near_plane_z,
+                toridraw_projection_cot16(
+                    camera->projection_mode, camera->projection_scale, camera->fov_rpi2048),
+                camera->pitch,
+                camera->yaw);
+        }
+    }
+    else if( model_has_textures(hnd) )
+    {
+        TORIDRAW_PROJECTION_CENSUS_RECORD(
+            TORIDRAW_PROJECTION_K_YAW_TEX, 1, model_vertex_count(hnd));
+        project_vertices_array_fused_clip(
+            scene->orthographic_vertices_x,
+            scene->orthographic_vertices_y,
+            scene->orthographic_vertices_z,
+            scene->screen_vertices_x,
+            scene->screen_vertices_y,
+            scene->screen_vertices_z,
+            model_vertices_x(hnd),
+            model_vertices_y(hnd),
+            model_vertices_z(hnd),
+            model_vertex_count(hnd),
+            model_yaw,
+            model_mid_z,
+            position->x,
+            position->y,
+            position->z,
+            scene->projection_near_plane_z,
+            toridraw_projection_cot16(
+                camera->projection_mode, camera->projection_scale, camera->fov_rpi2048),
+            camera->pitch,
+            camera->yaw);
+    }
+    else
+    {
+        TORIDRAW_PROJECTION_CENSUS_RECORD(
+            TORIDRAW_PROJECTION_K_YAW_NOTEX, 1, model_vertex_count(hnd));
+        project_vertices_array_fused_notex_clip(
+            scene->screen_vertices_x,
+            scene->screen_vertices_y,
+            scene->screen_vertices_z,
+            model_vertices_x(hnd),
+            model_vertices_y(hnd),
+            model_vertices_z(hnd),
+            model_vertex_count(hnd),
+            model_yaw,
+            model_mid_z,
+            position->x,
+            position->y,
+            position->z,
+            scene->projection_near_plane_z,
+            toridraw_projection_cot16(
+                camera->projection_mode, camera->projection_scale, camera->fov_rpi2048),
+            camera->pitch,
+            camera->yaw);
+    }
+}
+
+/*
+ * The same models, with the prepared-camera kernel in front.
+ *
+ * Two functions rather than one with a flag, for the reason the comment above
+ * gives: below this point every kernel is specialized, and a runtime test here
+ * would be a branch on a value that is constant for the whole frame. The
+ * projection kernel a caller selects picks the entry; nothing downstream asks
+ * again.
+ *
+ * Falls through to the portable ladder for every model the prepared kernel
+ * cannot take -- pitched, rolled, drawn under a camera whose prepared block
+ * was never published, or simply not a shape this build's lane implements.
+ * That fallback is the reason this is a superset of `_portable` and not an
+ * alternative to it.
+ *
+ * Which lane answers is graphics/projection_prepared.u.c's business, and the
+ * hook says only whether it took the model; see projection_prepared.h.
+ */
+static inline void
+toridraw_project_vertices_clip_prepared(
+    struct ToriDraw_Scene* scene,
+    struct ToriDraw_ModelHandle hnd,
+    struct ToriDraw_Position* position,
+    struct ToriDraw_Camera* camera,
+    int model_pitch,
+    int model_yaw,
+    int model_roll,
+    int camera_roll,
+    int model_mid_z)
+{
+    if( toridraw_projection_prepared_eligible(
+            scene, camera, model_pitch, model_roll, camera_roll) &&
+        toridraw_projection_prepared_clip(scene, hnd, position, camera, model_yaw, model_mid_z) )
+        return;
+
+    toridraw_project_vertices_clip_portable(
+        scene, hnd, position, camera, model_pitch, model_yaw, model_roll, camera_roll, model_mid_z);
+}
+
+/* Models that provably cannot; no sentinel, no near-plane test. */
+TORIDRAW_PROJECTION_SLOT_NEVER_INLINE
+static void
+toridraw_project_vertices_noclip_portable(
+    struct ToriDraw_Scene* scene,
+    struct ToriDraw_ModelHandle hnd,
+    struct ToriDraw_Position* position,
+    struct ToriDraw_Camera* camera,
+    int model_pitch,
+    int model_yaw,
+    int model_roll,
+    int camera_roll,
+    int model_mid_z)
+{
+    /* Full 6DOF when model/camera roll is set (obj-icon zan2d, etc.). yaw-only and
+     * pitch+yaw keep the SIMD fused paths; array6_fused matches v0 Dash. */
+    if( model_roll != 0 || camera_roll != 0 )
+    {
+        if( model_has_textures(hnd) )
+        {
+            TORIDRAW_PROJECTION_CENSUS_RECORD(
+                TORIDRAW_PROJECTION_K_6DOF_TEX, 0, model_vertex_count(hnd));
+            project_vertices_array6_fused_noclip(
+                scene->orthographic_vertices_x,
+                scene->orthographic_vertices_y,
+                scene->orthographic_vertices_z,
+                scene->screen_vertices_x,
+                scene->screen_vertices_y,
+                scene->screen_vertices_z,
+                model_vertices_x(hnd),
+                model_vertices_y(hnd),
+                model_vertices_z(hnd),
+                model_vertex_count(hnd),
+                model_pitch,
+                model_yaw,
+                model_roll,
+                model_mid_z,
+                position->x,
+                position->y,
+                position->z,
+                camera->near_plane_z,
+                toridraw_projection_cot16(
+                    camera->projection_mode, camera->projection_scale, camera->fov_rpi2048),
+                camera->pitch,
+                camera->yaw,
+                camera_roll);
+        }
+        else
+        {
+            TORIDRAW_PROJECTION_CENSUS_RECORD(
+                TORIDRAW_PROJECTION_K_6DOF_NOTEX, 0, model_vertex_count(hnd));
+            project_vertices_array6_fused_notex_noclip(
+                scene->screen_vertices_x,
+                scene->screen_vertices_y,
+                scene->screen_vertices_z,
+                model_vertices_x(hnd),
+                model_vertices_y(hnd),
+                model_vertices_z(hnd),
+                model_vertex_count(hnd),
+                model_pitch,
+                model_yaw,
+                model_roll,
+                model_mid_z,
+                position->x,
+                position->y,
+                position->z,
+                camera->near_plane_z,
+                toridraw_projection_cot16(
+                    camera->projection_mode, camera->projection_scale, camera->fov_rpi2048),
+                camera->pitch,
+                camera->yaw,
+                camera_roll);
+        }
+    }
+    else if( model_pitch != 0 )
+    {
+        if( model_has_textures(hnd) )
+        {
+            TORIDRAW_PROJECTION_CENSUS_RECORD(
+                TORIDRAW_PROJECTION_K_PITCHYAW_TEX, 0, model_vertex_count(hnd));
+            project_vertices_array_pitchyaw_fused_noclip(
+                scene->orthographic_vertices_x,
+                scene->orthographic_vertices_y,
+                scene->orthographic_vertices_z,
+                scene->screen_vertices_x,
+                scene->screen_vertices_y,
+                scene->screen_vertices_z,
+                model_vertices_x(hnd),
+                model_vertices_y(hnd),
+                model_vertices_z(hnd),
+                model_vertex_count(hnd),
+                model_pitch,
+                model_yaw,
+                model_mid_z,
+                position->x,
+                position->y,
+                position->z,
+                camera->near_plane_z,
+                toridraw_projection_cot16(
+                    camera->projection_mode, camera->projection_scale, camera->fov_rpi2048),
+                camera->pitch,
+                camera->yaw);
+        }
+        else
+        {
+            TORIDRAW_PROJECTION_CENSUS_RECORD(
+                TORIDRAW_PROJECTION_K_PITCHYAW_NOTEX, 0, model_vertex_count(hnd));
+            project_vertices_array_pitchyaw_fused_notex_noclip(
+                scene->screen_vertices_x,
+                scene->screen_vertices_y,
+                scene->screen_vertices_z,
+                model_vertices_x(hnd),
+                model_vertices_y(hnd),
+                model_vertices_z(hnd),
+                model_vertex_count(hnd),
+                model_pitch,
+                model_yaw,
+                model_mid_z,
+                position->x,
+                position->y,
+                position->z,
+                camera->near_plane_z,
+                toridraw_projection_cot16(
+                    camera->projection_mode, camera->projection_scale, camera->fov_rpi2048),
+                camera->pitch,
+                camera->yaw);
+        }
+    }
+    else if( model_has_textures(hnd) )
+    {
+        TORIDRAW_PROJECTION_CENSUS_RECORD(
+            TORIDRAW_PROJECTION_K_YAW_TEX, 0, model_vertex_count(hnd));
+        project_vertices_array_fused_noclip(
+            scene->orthographic_vertices_x,
+            scene->orthographic_vertices_y,
+            scene->orthographic_vertices_z,
+            scene->screen_vertices_x,
+            scene->screen_vertices_y,
+            scene->screen_vertices_z,
+            model_vertices_x(hnd),
+            model_vertices_y(hnd),
+            model_vertices_z(hnd),
+            model_vertex_count(hnd),
+            model_yaw,
+            model_mid_z,
+            position->x,
+            position->y,
+            position->z,
+            camera->near_plane_z,
+            toridraw_projection_cot16(
+                camera->projection_mode, camera->projection_scale, camera->fov_rpi2048),
+            camera->pitch,
+            camera->yaw);
+    }
+    else
+    {
+        TORIDRAW_PROJECTION_CENSUS_RECORD(
+            TORIDRAW_PROJECTION_K_YAW_NOTEX, 0, model_vertex_count(hnd));
+        project_vertices_array_fused_notex_noclip(
+            scene->screen_vertices_x,
+            scene->screen_vertices_y,
+            scene->screen_vertices_z,
+            model_vertices_x(hnd),
+            model_vertices_y(hnd),
+            model_vertices_z(hnd),
+            model_vertex_count(hnd),
+            model_yaw,
+            model_mid_z,
+            position->x,
+            position->y,
+            position->z,
+            camera->near_plane_z,
+            toridraw_projection_cot16(
+                camera->projection_mode, camera->projection_scale, camera->fov_rpi2048),
+            camera->pitch,
+            camera->yaw);
+    }
+}
+
+/*
+ * The prepared-camera entry for models that provably cannot reach behind the
+ * near plane. Its portable twin is toridraw_project_vertices_noclip_portable
+ * above, which this falls through to for every model the prepared kernels
+ * cannot take.
+ */
+TORIDRAW_PROJECTION_SLOT_ALWAYS_INLINE
+static inline void
+toridraw_project_vertices_noclip_prepared(
+    struct ToriDraw_Scene* scene,
+    struct ToriDraw_ModelHandle hnd,
+    struct ToriDraw_Position* position,
+    struct ToriDraw_Camera* camera,
+    int model_pitch,
+    int model_yaw,
+    int model_roll,
+    int camera_roll,
+    int model_mid_z)
+{
+    if( toridraw_projection_prepared_eligible(
+            scene, camera, model_pitch, model_roll, camera_roll) &&
+        toridraw_projection_prepared_noclip(scene, hnd, position, camera, model_yaw, model_mid_z) )
+        return;
+
+    toridraw_project_vertices_noclip_portable(
+        scene, hnd, position, camera, model_pitch, model_yaw, model_roll, camera_roll, model_mid_z);
+}
+
+/*
+ * Parallel-projection dispatch, one per near-clip family, mirroring the
+ * perspective pair above. Same split for the same reason: the choice is made
+ * once per model in ToriDraw_Project and everything below is specialized.
+ */
+static inline void
+toridraw_project_vertices_parallel_clip(
+    struct ToriDraw_Scene* scene,
+    struct ToriDraw_ModelHandle hnd,
+    struct ToriDraw_Position* position,
+    struct ToriDraw_Camera* camera,
+    int model_pitch,
+    int model_yaw,
+    int model_roll,
+    int camera_roll,
+    int model_mid_z)
+{
+    int const zoom16 = camera->parallel_zoom16 ? camera->parallel_zoom16 : TORIDRAW_ORTHO_ZOOM_UNIT;
+
+    if( model_pitch != 0 || model_roll != 0 || camera_roll != 0 )
+    {
+        if( model_has_textures(hnd) )
+            project_vertices_array_ortho6_fused_clip(
+                scene->orthographic_vertices_x,
+                scene->orthographic_vertices_y,
+                scene->orthographic_vertices_z,
+                scene->screen_vertices_x,
+                scene->screen_vertices_y,
+                scene->screen_vertices_z,
+                model_vertices_x(hnd),
+                model_vertices_y(hnd),
+                model_vertices_z(hnd),
+                model_vertex_count(hnd),
+                model_pitch,
+                model_yaw,
+                model_roll,
+                model_mid_z,
+                position->x,
+                position->y,
+                position->z,
+                scene->projection_near_plane_z,
+                zoom16,
+                camera->pitch,
+                camera->yaw,
+                camera_roll);
+        else
+            project_vertices_array_ortho6_fused_notex_clip(
+                scene->screen_vertices_x,
+                scene->screen_vertices_y,
+                scene->screen_vertices_z,
+                model_vertices_x(hnd),
+                model_vertices_y(hnd),
+                model_vertices_z(hnd),
+                model_vertex_count(hnd),
+                model_pitch,
+                model_yaw,
+                model_roll,
+                model_mid_z,
+                position->x,
+                position->y,
+                position->z,
+                scene->projection_near_plane_z,
+                zoom16,
+                camera->pitch,
+                camera->yaw,
+                camera_roll);
+    }
+    else if( model_has_textures(hnd) )
+    {
+        project_vertices_array_ortho_fused_clip(
+            scene->orthographic_vertices_x,
+            scene->orthographic_vertices_y,
+            scene->orthographic_vertices_z,
+            scene->screen_vertices_x,
+            scene->screen_vertices_y,
+            scene->screen_vertices_z,
+            model_vertices_x(hnd),
+            model_vertices_y(hnd),
+            model_vertices_z(hnd),
+            model_vertex_count(hnd),
+            model_yaw,
+            model_mid_z,
+            position->x,
+            position->y,
+            position->z,
+            scene->projection_near_plane_z,
+            zoom16,
+            camera->pitch,
+            camera->yaw);
+    }
+    else
+    {
+        project_vertices_array_ortho_fused_notex_clip(
+            scene->screen_vertices_x,
+            scene->screen_vertices_y,
+            scene->screen_vertices_z,
+            model_vertices_x(hnd),
+            model_vertices_y(hnd),
+            model_vertices_z(hnd),
+            model_vertex_count(hnd),
+            model_yaw,
+            model_mid_z,
+            position->x,
+            position->y,
+            position->z,
+            scene->projection_near_plane_z,
+            zoom16,
+            camera->pitch,
+            camera->yaw);
+    }
+}
+
+static inline void
+toridraw_project_vertices_parallel_noclip(
+    struct ToriDraw_Scene* scene,
+    struct ToriDraw_ModelHandle hnd,
+    struct ToriDraw_Position* position,
+    struct ToriDraw_Camera* camera,
+    int model_pitch,
+    int model_yaw,
+    int model_roll,
+    int camera_roll,
+    int model_mid_z)
+{
+    int const zoom16 = camera->parallel_zoom16 ? camera->parallel_zoom16 : TORIDRAW_ORTHO_ZOOM_UNIT;
+
+    if( model_pitch != 0 || model_roll != 0 || camera_roll != 0 )
+    {
+        if( model_has_textures(hnd) )
+            project_vertices_array_ortho6_fused_noclip(
+                scene->orthographic_vertices_x,
+                scene->orthographic_vertices_y,
+                scene->orthographic_vertices_z,
+                scene->screen_vertices_x,
+                scene->screen_vertices_y,
+                scene->screen_vertices_z,
+                model_vertices_x(hnd),
+                model_vertices_y(hnd),
+                model_vertices_z(hnd),
+                model_vertex_count(hnd),
+                model_pitch,
+                model_yaw,
+                model_roll,
+                model_mid_z,
+                position->x,
+                position->y,
+                position->z,
+                zoom16,
+                camera->pitch,
+                camera->yaw,
+                camera_roll);
+        else
+            project_vertices_array_ortho6_fused_notex_noclip(
+                scene->screen_vertices_x,
+                scene->screen_vertices_y,
+                scene->screen_vertices_z,
+                model_vertices_x(hnd),
+                model_vertices_y(hnd),
+                model_vertices_z(hnd),
+                model_vertex_count(hnd),
+                model_pitch,
+                model_yaw,
+                model_roll,
+                model_mid_z,
+                position->x,
+                position->y,
+                position->z,
+                zoom16,
+                camera->pitch,
+                camera->yaw,
+                camera_roll);
+    }
+    else if( model_has_textures(hnd) )
+    {
+        project_vertices_array_ortho_fused_noclip(
+            scene->orthographic_vertices_x,
+            scene->orthographic_vertices_y,
+            scene->orthographic_vertices_z,
+            scene->screen_vertices_x,
+            scene->screen_vertices_y,
+            scene->screen_vertices_z,
+            model_vertices_x(hnd),
+            model_vertices_y(hnd),
+            model_vertices_z(hnd),
+            model_vertex_count(hnd),
+            model_yaw,
+            model_mid_z,
+            position->x,
+            position->y,
+            position->z,
+            zoom16,
+            camera->pitch,
+            camera->yaw);
+    }
+    else
+    {
+        project_vertices_array_ortho_fused_notex_noclip(
+            scene->screen_vertices_x,
+            scene->screen_vertices_y,
+            scene->screen_vertices_z,
+            model_vertices_x(hnd),
+            model_vertices_y(hnd),
+            model_vertices_z(hnd),
+            model_vertex_count(hnd),
+            model_yaw,
+            model_mid_z,
+            position->x,
+            position->y,
+            position->z,
+            zoom16,
+            camera->pitch,
+            camera->yaw);
+    }
+}
+
+/*
+ * The perspective near-clip rule.
+ *
+ * Two things only this family knows. First, it divides by z, so a vertex that
+ * survives at a very small z projects to `coord * scale / z` -- unbounded, and
+ * past TORIDRAW_PROJECTED_COORD_LIMIT it wraps every edge stepper it touches.
+ * toridraw_safe_near_plane_z raises the plane far enough to bound that, and
+ * everything downstream clips against the raised value rather than the
+ * camera's own.
+ *
+ * Second, a near plane below 1 would admit a zero or negative divisor, so the
+ * clipping kernel has to take over whatever the model's bound says. That is a
+ * safety rule about division, which is why it lives here and not in the shell:
+ * the parallel family has no divisor to protect and would be paying for the
+ * more expensive kernel for nothing.
+ */
+/*
+ * TORIDRAW_PROJ_PREP_COT: take the camera's cot16 off the scene's prepared
+ * block when that block was published for this camera, instead of walking
+ * the fov table and clamp ladder for every model. Default on;
+ * TORIDRAW_PROJ_PREP_COT=0 re-derives it per model for an A/B. The two arms
+ * are the same function's output on the same camera, so they agree bit for
+ * bit. Read once and cached, the same shape as every other knob in the tree.
+ */
+static inline int
+toridraw_projection_prep_cot_armed(void)
+{
+    static int armed = -1;
+    if( armed < 0 )
+    {
+        const char* v = getenv("TORIDRAW_PROJ_PREP_COT");
+        armed = (v && v[0] == '0') ? 0 : 1;
+    }
+    return armed;
+}
+
+static void
+toridraw_projection_near_clip_perspective(
+    const struct ToriDraw_Scene* scene,
+    const struct ToriDraw_Camera* camera,
+    const struct ToriDraw_BoundsCylinder* bounds,
+    const struct ProjectedVertex* center,
+    int* out_near_plane_z,
+    bool* out_may_clip)
+{
+    assert(scene);
+    assert(camera);
+    assert(center);
+    assert(out_near_plane_z);
+    assert(out_may_clip);
+
+    int cot16;
+    if( scene->projection_prepared_camera_source == camera && toridraw_projection_prep_cot_armed() )
+        cot16 = scene->projection_prepared_cot16;
+    else
+        cot16 = toridraw_projection_cot16(
+            camera->projection_mode, camera->projection_scale, camera->fov_rpi2048);
+
+    int const near_plane_z =
+        toridraw_safe_near_plane_z(bounds, center, cot16, camera->near_plane_z);
+
+    *out_near_plane_z = near_plane_z;
+    *out_may_clip =
+        camera->near_plane_z < 1 || toridraw_model_reaches_near_plane(bounds, center, near_plane_z);
+}
+
+/*
+ * The parallel near-clip rule.
+ *
+ * Nothing here divides by z, so no vertex can leave the 16.16 domain however
+ * close it comes and there is no plane to raise -- the camera's value stands.
+ * For the same reason a near plane behind the camera is a perfectly ordinary
+ * request rather than a hazard: it is how a map editor says "never hide
+ * anything", and such a camera correctly never takes the clipping kernel at
+ * all.
+ *
+ * So the gate here means only "is anything near enough the view plane to need
+ * hiding", where under perspective it also meant "is anything about to be
+ * divided by a number too small to survive".
+ */
+static void
+toridraw_projection_near_clip_parallel(
+    const struct ToriDraw_Scene* scene,
+    const struct ToriDraw_Camera* camera,
+    const struct ToriDraw_BoundsCylinder* bounds,
+    const struct ProjectedVertex* center,
+    int* out_near_plane_z,
+    bool* out_may_clip)
+{
+    (void)scene;
+    assert(camera);
+    assert(center);
+    assert(out_near_plane_z);
+    assert(out_may_clip);
+
+    *out_near_plane_z = camera->near_plane_z;
+    *out_may_clip = toridraw_model_reaches_near_plane(bounds, center, camera->near_plane_z);
+}
+
+/*
+ * The stock projection families, and the two vtables that name them. One file
+ * each, in families/.
+ *
+ * Here rather than beside the kernels/ files that wrap them: a family is data
+ * about the static functions above, so it can only be written once those are
+ * in scope, and ToriDraw_Project below reads the prepared vtable directly.
+ * kernels/projection.{prepared,portable}.u.c, included later from toridraw.c,
+ * turn these two vtables into the ToriDraw_ProjectionKernel objects a caller
+ * selects.
+ *
+ * Parallel first: it is the shared slot the other two name.
+ */
+// clang-format off
+#include "families/projection.parallel.u.c"
+#include "families/projection.perspective_prepared.u.c"
+#include "families/projection.perspective_portable.u.c"
+// clang-format on
+
+/*
+ * Project one model, dispatching its vertices through `vtable`.
+ *
+ * Everything here -- the capacity refusal, the fast cull, the screen box, the
+ * AABB cull -- is the same whichever projection kernel was selected, and
+ * whichever family the camera resolves to. What is NOT the same is the near
+ * plane and the near-clip gate: this shell reads the camera once to pick a
+ * family and then asks that family for both, rather than spelling one
+ * family's rules out and excepting the other from them.
+ */
+static inline int
+ToriDraw_ProjectWithVTable(
+    struct ToriDraw_Scene* scene,
+    struct ToriDraw_ModelHandle hnd,
+    struct ToriDraw_Position* position,
+    struct ToriDraw_ViewPort* view_port,
+    struct ToriDraw_Camera* camera,
+    const struct ToriDraw_ProjectionKernelVTable* vtable)
+{
+    assert(vtable);
+    struct ProjectedVertex center_projection;
+
+    /*
+     * The handle, resolved ONCE. Every model kind puts its ToriDraw_Model at
+     * offset zero, so this is one pointer whichever kind it is; the accessor
+     * switches (model_vertex_count, model_has_textures, model_vertices_x ...)
+     * each re-asked the kind, and this shell plus its kernel asked eleven
+     * times per model. `hnd` itself is kept only for the debug macros, which
+     * name the model by it.
+     */
+    const struct ToriDraw_Model* const model = ToriDraw_ModelRead(hnd);
+    assert(model);
+
+    /* Refined below once the model's camera-space centre is known. Set here so
+     * an early cull cannot leave a stale plane behind for the next caller. */
+    scene->projection_near_plane_z = camera->near_plane_z;
+
+    /* Every projection and sort scratch array is scene-capacity bounded. A
+     * 2012 QBD is 6,223 vertices / 9,012 faces after its two model parts are
+     * merged, so the old 4,096 assumptions wrote beyond six separate buffers.
+     * Refuse an unsupported model before touching any array; full scenes now
+     * carry a large enough declared capacity for the imported encounter.
+     *
+     * Still per model rather than at scene-element bind: this shell also
+     * projects models that were never bound to an element (icons, the
+     * sprite baker, the tests), and with the handle resolved above it is two
+     * compares on fields already in the line the cull reads next. */
+    if( model->vertex_count > scene->max_vertices || model->face_count > scene->max_faces )
+    {
+        TORIDRAW_DBG_CAPACITY_REJECT(scene, hnd);
+        return TORIDRAW_CULL_ERROR;
+    }
+
+    /* Surface an undersized depth table before fast/AABB culling can hide the
+     * model from the face-sort diagnostics.  The bound is deliberately
+     * rotation-independent: every sorted face depth lies within [-bias,+bias]
+     * before the sorter adds bias, hence the required diameter is 2*bias+1. */
+    TORIDRAW_DBG_DEPTH_CAPACITY(scene, hnd);
+
+    int cull = TORIDRAW_CULL_VISIBLE;
+
+    g_toridraw_project_census.calls++;
+    cull = ToriDraw_FastCull(
+        scene, view_port, model, position, camera, &center_projection, NULL);
+    if( cull != TORIDRAW_CULL_VISIBLE )
+    {
+        if( cull == TORIDRAW_CULL_ERROR )
+        {
+            TORIDRAW_PROJECTION_CENSUS_COUNT(cull_error);
+            g_toridraw_project_census.cull_error++;
+        }
+        else
+        {
+            TORIDRAW_PROJECTION_CENSUS_COUNT(cull_fast);
+            g_toridraw_project_census.cull_fast++;
+        }
+        return cull;
+    }
+
+    scene->projected_vertex = center_projection;
+    scene->pick_position = *position;
+    scene->pick_camera = *camera;
+
+    /*
+     * No screen box is built before the projection. The model is bounded
+     * AFTER it, off its own projected vertices (toridraw_projected_bound
+     * below), which is where the eight-corner cylinder box used to be and
+     * why it is gone.
+     */
+    int const bound_vertex_count = model->vertex_count;
+
+    int const model_pitch = ToriDraw_NormalizeAngle(position->pitch);
+    int const model_yaw = ToriDraw_NormalizeAngle(position->yaw);
+    int const model_roll = ToriDraw_NormalizeAngle(position->roll);
+    int const camera_roll = ToriDraw_NormalizeAngle(camera->roll);
+
+    /*
+     * Decide once, for the whole model, whether any vertex can land behind the
+     * near plane. The reference asks the same question at the same point
+     * (Client-TS Model.worldRender:1755 `clipped = midZ - radiusZ <= 50`) and
+     * uses the answer to skip every per-face sentinel test in render2:1876 —
+     * which is why it never has to defend a genuine -5000. We do the same, and
+     * additionally hand the answer to the projection kernels so the per-vertex
+     * clip compare, the sentinel blend and the -5001 nudge all disappear from
+     * the common path rather than merely being ignored downstream.
+     *
+     * How that question is asked belongs to the family that answers it; see
+     * toridraw_projection_near_clip_perspective / _parallel above and the
+     * bound they share, toridraw_model_reaches_near_plane.
+     */
+    /* The cull above already refused a model with no cylinder, so this is
+     * never NULL here; the family rule still takes a nullable pointer because
+     * that is its contract. */
+    struct ToriDraw_BoundsCylinder const* const proj_bc =
+        model->has_bounds_cylinder ? &model->bounds_cylinder : NULL;
+
+    /*
+     * Which family, and then everything the family knows. The camera read
+     * below is the only projection-shape question this shell answers itself;
+     * the near plane everything downstream clips against and the gate that
+     * picks between the family's two vertex kernels are the family's to
+     * answer, because both have a different meaning under a projection that
+     * divides by z than under one that does not.
+     */
+    struct ToriDraw_ProjectionFamily const* const family =
+        toridraw_projection_is_parallel(camera->projection_mode) ? vtable->parallel
+                                                                 : vtable->perspective;
+    assert(family);
+    assert(family->near_clip);
+
+    bool may_clip;
+    family->near_clip(
+        scene, camera, proj_bc, &center_projection, &scene->projection_near_plane_z, &may_clip);
+
+#ifdef TORIDRAW_NEAR_CLIP_FORCE_ALL
+    /* Build with -DTORIDRAW_NEAR_CLIP_FORCE_ALL=1 to send every model down the
+     * clipping kernel, i.e. the behaviour from before the gate existed. Frames
+     * rendered by the two builds must be byte-identical: that equality is the
+     * whole correctness argument for the gate, so keep this switch working. */
+    may_clip = true;
+#endif
+
+    TORIDRAW_DBG_NEAR_CLIP_GATE(may_clip);
+
+    scene->near_clipped = may_clip;
+    /* Only the prepared kernels (AArch64 assembly, SSE2 fused-yaw) fill the
+     * bound block; every other path leaves this zero and the bound is swept
+     * from the outputs. */
+    scene->projection_bound_vertices = 0;
+
+    /* The slot the family's own gate selected. */
+    assert(family->project[may_clip]);
+    family->project[may_clip](
+        scene,
+        hnd,
+        position,
+        camera,
+        model_pitch,
+        model_yaw,
+        model_roll,
+        camera_roll,
+        center_projection.z);
+
+    /*
+     * The model's bound, off the coordinates just written; see
+     * toridraw_projected_bound for why it is exact, dilated, and after the
+     * projection rather than before it.
+     *
+     * Placed BEFORE the debug print so a culled model stays as silent as it
+     * was when the cull happened earlier.
+     */
+    toridraw_projected_bound(scene, view_port, bound_vertex_count);
+
+    cull = ToriDraw_AabbCull(&scene->aabb, view_port, camera);
+    TORIDRAW_PROJECTION_CENSUS_AABB(bound_vertex_count, cull != TORIDRAW_CULL_VISIBLE);
+    if( cull != TORIDRAW_CULL_VISIBLE )
+    {
+        TORIDRAW_PROJECTION_CENSUS_COUNT(cull_aabb);
+        g_toridraw_project_census.cull_aabb++;
+        return cull;
+    }
+
+    TORIDRAW_PROJECTION_CENSUS_COUNT(projected);
+    g_toridraw_project_census.projected++;
+    g_toridraw_project_census.projected_vertices += bound_vertex_count;
+    g_toridraw_project_census.tail_models += (bound_vertex_count & 3) != 0;
+
+    TORIDRAW_DBG_PROJECTION_PRINT(
+        scene, hnd, position, view_port, camera, center_projection.z, may_clip);
+
+    /* The gate's correctness argument, on real scene data: both kernels run
+     * over the same model inside one process and the results are compared.
+     * Compiled out unless TORIDRAW_NEAR_CLIP_STATS. */
+    TORIDRAW_DBG_VERIFY_NEAR_CLIP(
+        scene,
+        hnd,
+        position,
+        camera,
+        &center_projection,
+        proj_bc,
+        may_clip,
+        model_pitch,
+        model_yaw,
+        model_roll,
+        camera_roll);
+
+    return TORIDRAW_CULL_VISIBLE;
+}
+
+/*
+ * The stock entry: the prepared-camera kernels, with the portable ladder
+ * behind them. What every caller got before the vtable existed, and what
+ * ToriDraw_ProjectionKernelGetDefault still selects.
+ */
+static inline int
+ToriDraw_Project(
+    struct ToriDraw_Scene* scene,
+    struct ToriDraw_ModelHandle hnd,
+    struct ToriDraw_Position* position,
+    struct ToriDraw_ViewPort* view_port,
+    struct ToriDraw_Camera* camera)
+{
+    return ToriDraw_ProjectWithVTable(
+        scene, hnd, position, view_port, camera, &g_projection_prepared_vtable);
+}
+
+/**
+ * Sign-only barycentric containment. Dividing all three coordinates by the
+ * same `denominator` cannot change which of them are negative, so folding the
+ * denominator's sign in and comparing the raw numerators against zero gives
+ * the same answer with no divides and no float at all.
+ *
+ * This is the geometrically honest answer to "is the point on this triangle",
+ * which is what ToriDraw_ProjectedModelContainsPoint promises. It is NOT what
+ * the reference uses to pick a model under the cursor — see
+ * toridraw_mouse_roughly_inside_triangle below.
+ */
+static inline bool
+toridraw_triangle_contains_point(
+    int x1,
+    int y1,
+    int x2,
+    int y2,
+    int x3,
+    int y3,
+    int x,
+    int y)
+{
+    int denominator = (y2 - y3) * (x1 - x3) + (x3 - x2) * (y1 - y3);
+    if( denominator == 0 )
+        return false;
+
+    int a_num = (y2 - y3) * (x - x3) + (x3 - x2) * (y - y3);
+    int b_num = (y3 - y1) * (x - x3) + (x1 - x3) * (y - y3);
+    int c_num = denominator - a_num - b_num; /* c = 1 - a - b, unnormalized */
+
+    if( denominator < 0 )
+    {
+        a_num = -a_num;
+        b_num = -b_num;
+        c_num = -c_num;
+    }
+
+    return a_num >= 0 && b_num >= 0 && c_num >= 0;
+}
+
+/*
+ * Which triangle predicate a pick walk uses. Three, because the reference has
+ * three answers: a loose box for models, exact containment for ground, and —
+ * ours alone — a true barycentric test for callers that want geometry rather
+ * than parity (ToriDraw_ProjectedModelContainsPoint).
+ */
+enum ToriDrawPickTest
+{
+    TORIDRAW_PICKTEST_ROUGH = 0,          /* deob class144.method4915 */
+    TORIDRAW_PICKTEST_REFERENCE_TILE = 1, /* deob class112.method4206 */
+    TORIDRAW_PICKTEST_EXACT = 2,          /* not a reference rule */
+};
+
+/*
+ * The GROUND pick's containment test, ported statement for statement from deob
+ * class112.method4206 (reached as class155 -> method3946), which is also
+ * Client-TS World3D.insideTriangle.
+ *
+ * Not the same routine as toridraw_triangle_contains_point above, and the
+ * difference is not academic:
+ *
+ *  - The barycentric version divides the winding out through a `denominator`
+ *    and REFUSES a triangle whose projected area is zero. The reference has no
+ *    denominator: it takes the three edge cross-products and asks whether they
+ *    share a sign, so a face that projects to a line — a tile seen edge-on,
+ *    which is every wall of a pit and every far tile whose vertices round onto
+ *    one row — still picks. Bailing on those is how a hole in the floor
+ *    becomes unclickable.
+ *  - Zero is on the inside of every comparison here, so a click exactly on a
+ *    shared edge picks both tiles rather than falling between them.
+ *
+ * The int arithmetic is deliberate: the reference overflows the same products
+ * on the same inputs, and a widened version would answer differently where it
+ * does.
+ */
+static inline bool
+toridraw_reference_triangle_contains_point(
+    int x1,
+    int y1,
+    int x2,
+    int y2,
+    int x3,
+    int y3,
+    int x,
+    int y)
+{
+    if( y < y1 && y < y2 && y < y3 )
+        return false;
+    if( y > y1 && y > y2 && y > y3 )
+        return false;
+    if( x < x1 && x < x2 && x < x3 )
+        return false;
+    if( x > x1 && x > x2 && x > x3 )
+        return false;
+
+    int e0 = (y - y1) * (x2 - x1) - (x - x1) * (y2 - y1);
+    int e1 = (y - y2) * (x3 - x2) - (x - x2) * (y3 - y2);
+    int e2 = (y - y3) * (x1 - x3) - (x - x3) * (y1 - y3);
+
+    if( e0 != 0 )
+        return e0 < 0 ? (e1 <= 0 && e2 <= 0) : (e1 >= 0 && e2 >= 0);
+    if( e1 == 0 )
+        return true;
+    if( e1 < 0 )
+        return e2 <= 0;
+    return e2 >= 0;
+}
+
+/**
+ * The reference's per-face hit test is NOT containment: it asks whether the
+ * cursor, grown by `TORIDRAW_PICK_SLOP` in each direction, overlaps the
+ * triangle's screen bounding box. Client-TS names it exactly what it is —
+ * Model.isMouseRoughlyInsideTriangle (Model.ts:2413) — and the 239 deob
+ * inlines the same four comparisons (class144.method4915:1625-1646) around a
+ * slop of 5.
+ *
+ * The looseness is the whole point. A rock, a fence or a set of climbing
+ * handholds is a handful of small triangles with gaps between them; exact
+ * containment makes the gaps dead space and those locs nearly unclickable,
+ * which is precisely the agility-obstacle complaint. Face bboxes overlap far
+ * enough to fill the silhouette.
+ */
+
+static inline bool
+toridraw_mouse_roughly_inside_triangle(
+    int x1,
+    int y1,
+    int x2,
+    int y2,
+    int x3,
+    int y3,
+    int x,
+    int y)
+{
+    if( y + TORIDRAW_PICK_SLOP < y1 && y + TORIDRAW_PICK_SLOP < y2 && y + TORIDRAW_PICK_SLOP < y3 )
+        return false;
+    if( y - TORIDRAW_PICK_SLOP > y1 && y - TORIDRAW_PICK_SLOP > y2 && y - TORIDRAW_PICK_SLOP > y3 )
+        return false;
+    if( x + TORIDRAW_PICK_SLOP < x1 && x + TORIDRAW_PICK_SLOP < x2 && x + TORIDRAW_PICK_SLOP < x3 )
+        return false;
+    if( x - TORIDRAW_PICK_SLOP > x1 && x - TORIDRAW_PICK_SLOP > x2 && x - TORIDRAW_PICK_SLOP > x3 )
+        return false;
+    return true;
+}
+
+bool
+ToriDraw_ProjectedModelContainsAabb(
+    struct ToriDraw_Scene* scene,
+    int screen_x,
+    int screen_y)
+{
+    struct ToriDraw_AABB* aabb = &scene->aabb;
+    return screen_x >= aabb->min_screen_x && screen_x <= aabb->max_screen_x &&
+           screen_y >= aabb->min_screen_y && screen_y <= aabb->max_screen_y;
+}
+
+/*
+ * The reference's mouse test for a model: does the ray under the cursor pass
+ * through the model's 3D box? Every model is asked this first (class144.draw
+ * with field2115, which is always true: Statics.method129); a box model
+ * (field2167, Model.useAABBMouseCheck) is picked on the answer alone, and any
+ * other model goes on to the per-face rough test only when it is yes.
+ *
+ * NOT a screen rectangle. The projected-vertex rectangle grown by
+ * TORIDRAW_PICK_SLOP, which this replaced for box models, was 5 px wider than
+ * the model on every side at every distance -- double the width of an npc
+ * twenty pixels across -- and swallowed the whole screen once a vertex was
+ * near-clipped. The ray has no slop; the box's own padding is in world units,
+ * so it shrinks with distance as the model does.
+ *
+ * The box (class144.method4977): the model's vertices under its own rotation,
+ * bounded from the ORIGIN (min and max start at zero), centre (min+max)/2,
+ * half-extent (max-min+1)/2. x and z half-extents are raised to 32, and a box
+ * model's get 8 more. The reference rotates by yaw alone; this applies the
+ * model's full roll/pitch/yaw, in the projection's order, so the box contains
+ * exactly the vertices that were drawn.
+ *
+ * The ray (Statics.method1374 / method6402): the cursor's view ray from depth
+ * 50 to the draw distance, carried back through the camera rotation into
+ * world axes relative to the model origin. The intersection is the separating
+ * axis test of method6582, segment against box, axis for axis.
+ */
+static bool
+toridraw_pick_ray_hits_box(
+    struct ToriDraw_Scene* scene,
+    struct ToriDraw_ModelHandle hnd,
+    struct ToriDraw_ViewPort* view_port,
+    int screen_x,
+    int screen_y,
+    bool entity_box)
+{
+    const struct ToriDraw_Position* const pos = &scene->pick_position;
+    const struct ToriDraw_Camera* const cam = &scene->pick_camera;
+    int const vertex_count = model_vertex_count(hnd);
+    const vertexint_t* const vx = model_vertices_x(hnd);
+    const vertexint_t* const vy = model_vertices_y(hnd);
+    const vertexint_t* const vz = model_vertices_z(hnd);
+
+    int const pitch = ToriDraw_NormalizeAngle(pos->pitch);
+    int const yaw = ToriDraw_NormalizeAngle(pos->yaw);
+    int const roll = ToriDraw_NormalizeAngle(pos->roll);
+    int const sin_pitch = ToriDraw_ReadSinTable(pitch);
+    int const cos_pitch = ToriDraw_ReadCosTable(pitch);
+    int const sin_yaw = ToriDraw_ReadSinTable(yaw);
+    int const cos_yaw = ToriDraw_ReadCosTable(yaw);
+    int const sin_roll = ToriDraw_ReadSinTable(roll);
+    int const cos_roll = ToriDraw_ReadCosTable(roll);
+
+    int min_x = 0, min_y = 0, min_z = 0;
+    int max_x = 0, max_y = 0, max_z = 0;
+    for( int i = 0; i < vertex_count; i++ )
+    {
+        /* project_orthographic's model rotation, statement for statement. */
+        int x = vx[i];
+        int y = vy[i];
+        int z = vz[i];
+        if( roll != 0 )
+        {
+            int tmp = (y * sin_roll + x * cos_roll) >> 16;
+            y = (y * cos_roll - x * sin_roll) >> 16;
+            x = tmp;
+        }
+        if( pitch != 0 )
+        {
+            int tmp = (y * cos_pitch - z * sin_pitch) >> 16;
+            z = (y * sin_pitch + z * cos_pitch) >> 16;
+            y = tmp;
+        }
+        if( yaw != 0 )
+        {
+            int tmp = (z * sin_yaw + x * cos_yaw) >> 16;
+            z = (z * cos_yaw - x * sin_yaw) >> 16;
+            x = tmp;
+        }
+        if( x < min_x )
+            min_x = x;
+        if( x > max_x )
+            max_x = x;
+        if( y < min_y )
+            min_y = y;
+        if( y > max_y )
+            max_y = y;
+        if( z < min_z )
+            min_z = z;
+        if( z > max_z )
+            max_z = z;
+    }
+
+    double const box_x = (min_x + max_x) / 2;
+    double const box_y = (min_y + max_y) / 2;
+    double const box_z = (min_z + max_z) / 2;
+    int half_x = (max_x - min_x + 1) / 2;
+    int const half_y = (max_y - min_y + 1) / 2;
+    int half_z = (max_z - min_z + 1) / 2;
+    if( half_x < 32 )
+        half_x = 32;
+    if( half_z < 32 )
+        half_z = 32;
+    if( entity_box )
+    {
+        half_x += 8;
+        half_z += 8;
+    }
+
+    /* The segment in camera space: x and y at depth d are the screen offset
+     * scaled back out of the projection. */
+    double const rel_x = screen_x - view_port->x_center;
+    double const rel_y = screen_y - view_port->y_center;
+    double const near_d = cam->near_plane_z;
+    double const far_d = TORIDRAW_CYLINDER_FAR_PLANE_Z;
+    double cam_end[2][3];
+    if( toridraw_projection_is_parallel(cam->projection_mode) )
+    {
+        double const zoom = (cam->parallel_zoom16 ? cam->parallel_zoom16 : TORIDRAW_ORTHO_ZOOM_UNIT) /
+                            (double)TORIDRAW_ORTHO_ZOOM_UNIT;
+        for( int e = 0; e < 2; e++ )
+        {
+            cam_end[e][0] = rel_x / zoom;
+            cam_end[e][1] = rel_y / zoom;
+        }
+    }
+    else
+    {
+        /* screen = ((c * cot15) >> 15) * 512 / z, so the linear scale is
+         * cot15 / 64. */
+        double const scale =
+            (toridraw_projection_cot16(cam->projection_mode, cam->projection_scale, cam->fov_rpi2048) >>
+             1) /
+            64.0;
+        cam_end[0][0] = rel_x * near_d / scale;
+        cam_end[0][1] = rel_y * near_d / scale;
+        cam_end[1][0] = rel_x * far_d / scale;
+        cam_end[1][1] = rel_y * far_d / scale;
+    }
+    cam_end[0][2] = near_d;
+    cam_end[1][2] = far_d;
+
+    /* Back through the camera: the transpose of project_orthographic's
+     * yaw, pitch, roll, undone in reverse. */
+    int const cp = ToriDraw_NormalizeAngle(cam->pitch);
+    int const cy = ToriDraw_NormalizeAngle(cam->yaw);
+    int const cr = ToriDraw_NormalizeAngle(cam->roll);
+    double const sin_cp = ToriDraw_ReadSinTable(cp) / 65536.0;
+    double const cos_cp = ToriDraw_ReadCosTable(cp) / 65536.0;
+    double const sin_cy = ToriDraw_ReadSinTable(cy) / 65536.0;
+    double const cos_cy = ToriDraw_ReadCosTable(cy) / 65536.0;
+    double const sin_cr = ToriDraw_ReadSinTable(cr) / 65536.0;
+    double const cos_cr = ToriDraw_ReadCosTable(cr) / 65536.0;
+    double end[2][3];
+    for( int e = 0; e < 2; e++ )
+    {
+        double const xf = cam_end[e][0];
+        double const yf = cam_end[e][1];
+        double const zf = cam_end[e][2];
+        double const xs = xf * cos_cr - yf * sin_cr;
+        double const ys = xf * sin_cr + yf * cos_cr;
+        double const y = ys * cos_cp + zf * sin_cp;
+        double const zs = zf * cos_cp - ys * sin_cp;
+        double const x = xs * cos_cy - zs * sin_cy;
+        double const z = xs * sin_cy + zs * cos_cy;
+        /* pick_position is the model origin relative to the camera. */
+        end[e][0] = x - pos->x;
+        end[e][1] = y - pos->y;
+        end[e][2] = z - pos->z;
+    }
+
+    /* method6582: segment midpoint against box centre, then the three edge
+     * cross axes. */
+    double const dx = (end[1][0] - end[0][0]) / 2;
+    double const dy = (end[1][1] - end[0][1]) / 2;
+    double const dz = (end[1][2] - end[0][2]) / 2;
+    double const adx = fabs(dx);
+    double const ady = fabs(dy);
+    double const adz = fabs(dz);
+    double const tx = (end[0][0] + end[1][0]) / 2 - box_x;
+    double const ty = (end[0][1] + end[1][1]) / 2 - box_y;
+    double const tz = (end[0][2] + end[1][2]) / 2 - box_z;
+
+    if( fabs(tx) > half_x + adx )
+        return false;
+    if( fabs(ty) > half_y + ady )
+        return false;
+    if( fabs(tz) > half_z + adz )
+        return false;
+    if( fabs(dy * tz - dz * ty) > half_y * adz + half_z * ady )
+        return false;
+    if( fabs(dz * tx - dx * tz) > half_x * adz + half_z * adx )
+        return false;
+    return fabs(dx * ty - dy * tx) <= half_x * ady + half_y * adx;
+}
+
+/**
+ * Shared face walk behind both per-face tests. Which faces are eligible is the
+ * same question for any of them — only the triangle predicate differs, so
+ * `test` picks between them at the bottom.
+ *
+ * `include_hidden` lifts the hidden-face filter for ground tiles, which the
+ * reference picks down a different path entirely — a path that is also exact
+ * rather than rough, so the two flags move together. See
+ * ToriDraw_ProjectedTileMouseHitTest.
+ */
+static bool
+toridraw_projected_model_hit_face(
+    struct ToriDraw_Scene* scene,
+    struct ToriDraw_ModelHandle hnd,
+    struct ToriDraw_ViewPort* view_port,
+    int screen_x,
+    int screen_y,
+    enum ToriDrawPickTest test,
+    bool include_hidden)
+{
+    if( !ToriDraw_ProjectedModelContainsAabb(scene, screen_x, screen_y) )
+        return false;
+
+    int adjusted_screen_x = screen_x - view_port->x_center;
+    int adjusted_screen_y = screen_y - view_port->y_center;
+
+    faceint_t* fia = NULL;
+    faceint_t* fib = NULL;
+    faceint_t* fic = NULL;
+    hsl16_t* colors_c = NULL;
+    int face_count = 0;
+
+    switch( hnd.kind )
+    {
+    case TORIDRAWMK_MODEL:
+    case TORIDRAWMK_MODEL_HD:
+    case TORIDRAWMK_MODEL_SHARED:
+    case TORIDRAWMK_MODEL_LENT_FACES:
+    {
+        struct ToriDraw_Model* m = model_as_full(hnd);
+        fia = m->face_indices_a;
+        fib = m->face_indices_b;
+        fic = m->face_indices_c;
+        colors_c = m->face_colors_c;
+        face_count = m->face_count;
+        break;
+    }
+    default:
+        return false;
+    }
+
+    for( int i = 0; i < face_count; i++ )
+    {
+        /*
+         * Hidden faces do not pick. `faceColourC == -2` is the reference's one
+         * hidden marker (class144.method4915:1575, Client-TS Model.ts:1856
+         * spells the same thing as faceRenderType -1 because it hides on the
+         * lit model instead), and ModelData.light stamps it for render type 2:
+         * a fully transparent face, and every face mergeNormals removed where
+         * two adjacent locs share all three vertices (class136:644/652). Here
+         * that sentinel is TORIDRAWHSL16_HIDDEN, written by ToriDraw_Light.
+         *
+         * Note what is deliberately NOT filtered: the reference runs this pick
+         * *after* computing the winding cull and ignores it (class144:1616 vs
+         * :1618), so a backfacing face still picks, and so does a face the
+         * depth sort later drops.
+         */
+        if( !include_hidden && colors_c && colors_c[i] == TORIDRAWHSL16_HIDDEN )
+            continue;
+
+        int face_a = fia[i];
+        int face_b = fib[i];
+        int face_c = fic[i];
+
+        int x1 = scene->screen_vertices_x[face_a];
+        int x2 = scene->screen_vertices_x[face_b];
+        int x3 = scene->screen_vertices_x[face_c];
+
+        /*
+         * Near-clipped faces do not pick either (the reference reaches its
+         * pick only down the not-near-clipped arm, class144:1615). Mandatory
+         * rather than cosmetic for the rough test: the projection parks a
+         * behind-the-eye vertex at screen x -5000 and leaves its y
+         * *undivided*, so a bounding box over it spans the screen and would
+         * swallow every click behind the model.
+         *
+         * Gated on near_clipped exactly as the reference gates on `clipped`
+         * (Model.render2:1876). Not just a saving: when the flag is clear the
+         * projection ran its no-clip kernel, which skips the -5001 nudge, so a
+         * legitimately projected -5000 is possible and testing for it here
+         * would drop a pickable face.
+         */
+        if( scene->near_clipped &&
+            (x1 == TORIDRAW_SCREEN_X_NEAR_CLIPPED || x2 == TORIDRAW_SCREEN_X_NEAR_CLIPPED ||
+             x3 == TORIDRAW_SCREEN_X_NEAR_CLIPPED) )
+            continue;
+
+        int y1 = scene->screen_vertices_y[face_a];
+        int y2 = scene->screen_vertices_y[face_b];
+        int y3 = scene->screen_vertices_y[face_c];
+
+        bool hit;
+        switch( test )
+        {
+        case TORIDRAW_PICKTEST_ROUGH:
+            hit = toridraw_mouse_roughly_inside_triangle(
+                x1, y1, x2, y2, x3, y3, adjusted_screen_x, adjusted_screen_y);
+            break;
+        case TORIDRAW_PICKTEST_REFERENCE_TILE:
+            hit = toridraw_reference_triangle_contains_point(
+                x1, y1, x2, y2, x3, y3, adjusted_screen_x, adjusted_screen_y);
+            break;
+        default:
+            hit = toridraw_triangle_contains_point(
+                x1, y1, x2, y2, x3, y3, adjusted_screen_x, adjusted_screen_y);
+            break;
+        }
+        if( hit )
+            return true;
+    }
+
+    return false;
+}
+
+bool
+ToriDraw_ProjectedModelContainsPoint(
+    struct ToriDraw_Scene* scene,
+    struct ToriDraw_ModelHandle hnd,
+    struct ToriDraw_ViewPort* view_port,
+    int screen_x,
+    int screen_y)
+{
+    return toridraw_projected_model_hit_face(
+        scene,
+        hnd,
+        view_port,
+        screen_x,
+        screen_y,
+        TORIDRAW_PICKTEST_EXACT,
+        /* include_hidden */ false);
+}
+
+bool
+ToriDraw_ProjectedModelMouseHitTest(
+    struct ToriDraw_Scene* scene,
+    struct ToriDraw_ModelHandle hnd,
+    struct ToriDraw_ViewPort* view_port,
+    int screen_x,
+    int screen_y)
+{
+    /* Both halves of the reference's rule: the ray through the model's box
+     * (which bounds the faces' 5 px slop to the model), and then a face. The
+     * face walk goes first only because it is the cheaper miss. */
+    return toridraw_projected_model_hit_face(
+               scene,
+               hnd,
+               view_port,
+               screen_x,
+               screen_y,
+               TORIDRAW_PICKTEST_ROUGH,
+               /* include_hidden */ false) &&
+           toridraw_pick_ray_hits_box(
+               scene, hnd, view_port, screen_x, screen_y, /* entity_box */ false);
+}
+
+bool
+ToriDraw_ProjectedModelBoxHitTest(
+    struct ToriDraw_Scene* scene,
+    struct ToriDraw_ModelHandle hnd,
+    struct ToriDraw_ViewPort* view_port,
+    int screen_x,
+    int screen_y)
+{
+    assert(scene);
+    assert(view_port);
+    return toridraw_pick_ray_hits_box(
+        scene, hnd, view_port, screen_x, screen_y, /* entity_box */ true);
+}
+
+bool
+ToriDraw_ModelHasVisibleFace(struct ToriDraw_ModelHandle hnd)
+{
+    switch( hnd.kind )
+    {
+    case TORIDRAWMK_MODEL:
+    case TORIDRAWMK_MODEL_HD:
+    case TORIDRAWMK_MODEL_SHARED:
+    case TORIDRAWMK_MODEL_LENT_FACES:
+    {
+        struct ToriDraw_Model* m = model_as_full(hnd);
+        /* No lit colours yet: nothing has been hidden, so every face counts. */
+        if( !m->face_colors_c )
+            return m->face_count > 0;
+        for( int i = 0; i < m->face_count; i++ )
+        {
+            if( m->face_colors_c[i] != TORIDRAWHSL16_HIDDEN )
+                return true;
+        }
+        return false;
+    }
+    default:
+        /* A kind the per-face walk cannot read picks nothing per-face either;
+         * say "visible" so the caller keeps whatever rule it already had. */
+        return true;
+    }
+}
+
+bool
+ToriDraw_ProjectedTileMouseHitTest(
+    struct ToriDraw_Scene* scene,
+    struct ToriDraw_ModelHandle hnd,
+    struct ToriDraw_ViewPort* view_port,
+    int screen_x,
+    int screen_y)
+{
+    /* The ground pick's own reference routine — containment, not the model
+     * test's slop, and NOT the barycentric one, which refuses a face that
+     * projects to zero area. See toridraw_reference_triangle_contains_point. */
+    return toridraw_projected_model_hit_face(
+        scene,
+        hnd,
+        view_port,
+        screen_x,
+        screen_y,
+        TORIDRAW_PICKTEST_REFERENCE_TILE,
+        /* include_hidden */ true);
+}
+
+
+/*
+ * The cull verdict, and whether one screen point could possibly be on this
+ * model -- without projecting a single vertex.
+ *
+ * A GPU backend does not consume the software projection at all: it exists
+ * there for the cull and for the pick. The cull is this call's prologue, and
+ * the pick only ever asks about ONE point, so a model whose bounds-cylinder
+ * screen box excludes that point has nothing left to project for. On a
+ * settled scene that is essentially every model on screen.
+ *
+ * `point_x`/`point_y` are absolute screen coordinates, the same space
+ * ToriDraw_ProjectedModelMouseHitTest takes. Pass a NULL out pointer to ask
+ * only for the cull.
+ */
+int
+ToriDraw_RenderModel1CullPoint(
+    struct ToriDraw_ModelHandle hnd,
+    struct ToriDraw_Scene* scene,
+    struct ToriDraw_Position* position,
+    struct ToriDraw_ViewPort* view_port,
+    struct ToriDraw_Camera* camera,
+    int point_x,
+    int point_y,
+    bool* out_point_inside)
+{
+    struct ProjectedVertex center_projection;
+    struct ToriDraw_CullPointTest test;
+    int cull;
+
+    assert(scene);
+    assert(position);
+    assert(view_port);
+    assert(camera);
+    test.rel_x = point_x - view_port->x_center;
+    test.rel_y = point_y - view_port->y_center;
+    test.contains = false;
+    cull = ToriDraw_FastCull(
+        scene, view_port, ToriDraw_ModelRead(hnd), position, camera, &center_projection,
+        out_point_inside ? &test : NULL);
+    if( out_point_inside )
+        *out_point_inside = test.contains;
+    return cull;
+}

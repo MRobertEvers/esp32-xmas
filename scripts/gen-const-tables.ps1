@@ -26,7 +26,7 @@ $ErrorActionPreference = "Stop"
 $RepoRoot = Split-Path $PSScriptRoot -Parent
 
 if (-not $ClientcDir) {
-    # The vendored submodule, not a sibling checkout. CMake passes
+    # The vendored copy, not a sibling checkout. CMake passes
     # -ClientcDir explicitly; this is only the fallback for running the script
     # by hand, and it should agree with the build rather than with whatever
     # happens to sit next to the repo.
@@ -48,7 +48,7 @@ if (-not (Test-Path $GenSrc)) {
 # other host tooling uses.
 # A HOST compiler, not the cross one -- these tools run here, not on the part.
 #
-# The vendored submodule does NOT supply this: oldschool-clientc gitignores its
+# The vendored copy does NOT supply this either: oldschool-clientc gitignores its
 # `toolchains/` directory, so resolving gcc relative to $ClientcDir worked only
 # while that pointed at a full working copy. Search the places it can actually
 # be instead, and say which ones were tried when it is in none of them.

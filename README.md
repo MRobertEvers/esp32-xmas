@@ -202,7 +202,7 @@ cable guidance and the generator scripts are in
 | Firmware | [ESP-IDF](https://docs.espressif.com/projects/esp-idf/) | v5.1+ | `idf.py` build, flash, monitor; CMake drives the bake generators |
 | Firmware | Host C compiler | any `gcc` on `PATH` (`HOST_CC` overrides) | Builds `tools/bake_model` and `tools/extract_model`, which run at build time |
 | Firmware | PowerShell | `scripts/*.ps1` | The three build-time generators (`bake-model`, `gen-const-tables`, `extract-model`) |
-| Firmware | [toridraw / rscache](https://github.com/MRobertEvers/oldschool-clientc) | submodule pin in `3rd/` | Software rasteriser and OSRS cache readers |
+| Firmware | [toridraw / rscache](https://github.com/MRobertEvers/oldschool-clientc) | vendored in `3rd/`, pinned commit | Software rasteriser and OSRS cache readers |
 | Board | [KiCad](https://www.kicad.org/) | 10.0.6 | `board/xmas_orn` and `board/xmas_hub` schematics and layouts |
 | Board | `kicad-cli` | ships with KiCad | ERC/DRC, netlist, BOM, position file, gerber/drill export, PDF/SVG/PNG renders in `docs/` |
 | Board | KiCad's bundled Python (`pcbnew`) | inside the KiCad app bundle | `board/xmas_hub/scripts/gen_sch.py` / `gen_pcb.py` generate that board programmatically |
@@ -223,20 +223,27 @@ handy stand-in for `pdftoppm` when previewing the exported PDFs.
 - A host `gcc` on `PATH` (MinGW is fine) to build the bake tools. `HOST_CC` overrides.
 - **The OSRS caches**, which are *not* vendored — see below.
 
-### Libraries: vendored as a submodule
+### Libraries: vendored
 
 `toridraw`, `rscache` and `toridraw_rscache` come from
-[`oldschool-clientc`](https://github.com/MRobertEvers/oldschool-clientc), pinned
-as a submodule at [`3rd/oldschool-clientc`](3rd/oldschool-clientc).
+[`oldschool-clientc`](https://github.com/MRobertEvers/oldschool-clientc). The
+parts this repo builds from are copied in as plain files under
+[`3rd/oldschool-clientc`](3rd/oldschool-clientc), at the same paths they have
+there, pinned to the commit in
+[`VENDORED.md`](3rd/oldschool-clientc/VENDORED.md): the three libraries,
+`bzip`/`miniz`/`xteas` for the host bake tools, and OSRS-Content's `all.seq`,
+which is where the animation frame ids and their hold times come from. A plain
+`git clone` is all a build needs.
 
-```powershell
-git clone git@github.com:MRobertEvers/esp32-xmas.git
-cd esp32-xmas
-git submodule update --init --recursive
+To move to a newer library commit, re-vendor from a working copy and commit
+the result (the script takes files from `git archive`, so local edits and
+ignored files never get in):
+
+```sh
+scripts/vendor-clientc.sh ../oldschool-clientc [commit]   # Git Bash on Windows
 ```
 
-`--recursive` matters: the nested `OSRS-Content` submodule supplies `all.seq`,
-which is where the animation frame ids and their hold times come from.
+Don't edit the vendored files in place; change the library upstream.
 
 This used to be `../oldschool-clientc` — whatever happened to be checked out
 next to this repo on the machine doing the build. That is not a version. The
@@ -253,7 +260,7 @@ idf.py -DCLIENTC_DIR=C:\path\to\oldschool-clientc build
 ### Caches: local, not vendored
 
 The caches are gigabytes of game data and are gitignored in *both* repos, so the
-submodule carries the libraries and the configs but **no cache**. They get their
+vendored copy carries the libraries and `all.seq` but **no cache**. They get their
 own root, defaulting to a sibling checkout:
 
 | Variable | Default | |
@@ -262,8 +269,8 @@ own root, defaulting to a sibling checkout:
 | `ANIM_CACHE_DIR` | `${CACHE_ROOT}/cache.osrs239` | dat2 cache |
 | `CACHE_DIR` | `${CACHE_ROOT}/cache.rs289lc` | dat1 cache |
 
-Pointing these at the submodule would look tidier and would silently break every
-fresh clone, because the directory exists and is empty.
+Pointing these at the vendored copy would look tidier and would silently break
+every fresh clone, because the directory exists and has no cache in it.
 
 ## Build and flash
 
