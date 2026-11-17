@@ -96,6 +96,14 @@ groove_z0 = 0.6;  groove_z1 = groove_z0 + groove_w;
 notch_y0  = -6.5; notch_y1 = -2.9; notch_d = 0.5;   // detent pocket in the groove near the antenna end
 // plus the side windows above (usb_win on x = env_x0 face, jack_win on x = env_x1 face)
 // and the front window: glass_x0..glass_x1 / glass_y0..glass_y1 on the z = env_z1 face.
+// Fixing screw: one M2 x 8 flat head from the back of the outer, through the pocket floor, into a
+// boss in the sled's floor at (fix_x, fix_y).  Past the PCB's header edge, under the display
+// overhang, at the far end from the antenna.  sleeve_cuts() makes the countersunk hole in every outer.
+fix_x = pcb_w / 2;          // 13.75
+fix_y = 43.6;
+fix_hole_d = 2.4;           // M2 clearance
+fix_csk_d  = 4.2;           // M2 flat head is 3.8 across, 90 deg
+fix_back_t = 1.8;           // outer material under the head; thicker backs get a counterbore down to this
 
 // ---------------------------------------------------------------- bezel
 win_x0 = glass_x0 - 0.4; win_x1 = glass_x1 + 0.4;
@@ -236,10 +244,19 @@ module sleeve_cuts(ext = 1, finger = false) {
          glass_y0 - front_win_margin, glass_y1 + front_win_margin, iz1 - eps, sz1 + 60, 1.5);
     xslot(ix0 - 100, ix0 + 1, usb_win[0],  usb_win[1],  usb_win[2],  usb_win[3],  1.5);
     xslot(ix1 - 1, ix1 + 100, jack_win[0], jack_win[1], jack_win[2], jack_win[3], 2);
+    fixing_hole();
     if (finger) {
         xslot(ix0 - 100, ix0 - 5, usb_win[0] - 2.5,  usb_win[1] + 2.5,  usb_win[2] - 2,  usb_win[3] + 2,  3);
         xslot(ix1 + 5, ix1 + 100, jack_win[0] - 2.5, jack_win[1] + 2.5, jack_win[2] - 2, jack_win[3] + 2, 3);
     }
+}
+// countersunk M2 through the back, head seat fix_back_t below the pocket floor; a counterbore
+// clears anything thicker out to the back face, so one screw length fits every outer
+module fixing_hole() translate([fix_x, fix_y, 0]) {
+    seat = iz0 - fix_back_t;
+    translate([0, 0, seat - eps]) cylinder(d = fix_hole_d, h = fix_back_t + 1);
+    translate([0, 0, seat - eps]) cylinder(d1 = fix_csk_d, d2 = fix_hole_d, h = (fix_csk_d - fix_hole_d) / 2 + eps);
+    translate([0, 0, seat - 60])  cylinder(d = fix_csk_d, h = 60);
 }
 module sleeve_rails() mirror_x((sx0 + sx1) / 2) rail_left();
 // hanging loop with its hole front-to-back, standing on the edge y = y_top at x

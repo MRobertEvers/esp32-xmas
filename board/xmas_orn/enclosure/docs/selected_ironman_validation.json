@@ -5,11 +5,11 @@
     "trapezoid_armor": {
       "parts": {
         "body": {
-          "sha256": "45312806c80f1874241451428ac332adb4a6edb530b3b923a28dbfeb37697f34",
+          "sha256": "f2bb07480f7bcce29834b259a0d608656a223f1700a169b297ed8d48824338cc",
           "watertight": true,
           "winding_consistent": true,
           "components": 1,
-          "volume_mm3": 107356.8383
+          "volume_mm3": 107344.9625
         },
         "gold": {
           "sha256": "91bbd61b717f3981c229d2df07a74e22efedbd1366be841939b646329c041098",
@@ -45,7 +45,7 @@
         },
         "colours": {
           "empty": false,
-          "residual_volume_mm3": 1.2291275197640061e-07
+          "residual_volume_mm3": 1.229097203273947e-07
         },
         "backing": {
           "empty": true,
@@ -60,11 +60,11 @@
     "stark_core": {
       "parts": {
         "body": {
-          "sha256": "545e97ed750c4172065d48e8bcd4b3d1e07834be59ed2c4fcc1508e3b0e499e0",
+          "sha256": "399a113d1452579d2a7afd2b1351527a81832e130946e0903fa37bd4192fbb07",
           "watertight": true,
           "winding_consistent": true,
           "components": 1,
-          "volume_mm3": 82260.6486
+          "volume_mm3": 82248.7728
         },
         "gold": {
           "sha256": "c2c937679dfc002e57c4457d9f6fedd183d9de0efda07d44dc5f3c22bef15458",
@@ -115,11 +115,11 @@
     "reactor_medallion": {
       "parts": {
         "body": {
-          "sha256": "291b065a3e7e7651055e06f191b812c6e9e22995e13882a7fd84fd76f9fec447",
+          "sha256": "91e539272aa79a1001c63281457704f410ba9f46730332f20cf0ebb21641cfaf",
           "watertight": true,
           "winding_consistent": true,
           "components": 1,
-          "volume_mm3": 95319.661
+          "volume_mm3": 95307.7852
         },
         "gold": {
           "sha256": "4152a5f6ea7e21a5fbe74e3ae76e9d60c05e7b7216cdc86e7e8da2332dbe4819",
@@ -169,7 +169,7 @@
     }
   },
   "source_sha256": {
-    "xmas_orn_case.scad": "353e4d7a6c33eb5a996bc165edbf55d3b42be81c8400d3dd146988db9215f410",
+    "xmas_orn_case.scad": "69853cabab1eb6df21951fdaefe9bc087ad21a4f5f60d6e910572644c6be9977",
     "ironman_selected_parts.scad": "0e41e14e5968290bff0906a3df0cbecc631f3c7e21cc0ae71a0509f6969531af",
     "ironman_trapezoid_armor.scad": "8cc8488990cd63f9a0ee7e2c0fb13d48299787c1a24f832ae3e86b336f189c2a",
     "ironman_stark_core.scad": "eb69d68a94da7bb966c269d5a02b555b56ee627cdcebc45b974c5558d7c3feef",

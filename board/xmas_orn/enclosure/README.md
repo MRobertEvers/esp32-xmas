@@ -66,6 +66,55 @@ on one side with a fingernail.
 
 ![bezel](docs/bezel_underside.png)
 
+## Alternative core: one-piece sled
+
+![sled](docs/sled_iso.png) ![sled assembly](docs/sled_assembly_iso.png)
+
+[`xmas_orn_sled.scad`](xmas_orn_sled.scad) replaces the tray + bezel with one carrier you build
+the electronics onto and slide into any outer. It has the same footprint, side grooves and
+detent notches as the core tray, so the sleeve and every themed outer take it unchanged
+(`check_sled_in_core` shows the sled sits entirely inside the core's envelope).
+
+| Part | File | Print | Notes |
+|------|------|-------|-------|
+| Sled | `stl/xmas_orn_sled.stl` | floor down, no supports | 32.8 x 56.75 x 19.2 mm. Low side rails carry the grooves; full-height end walls, the header end carries two M2 bosses for the display |
+| Display bridge | `stl/xmas_orn_bridge.stl` | feet down, no supports (the bar bridges 22 mm) | Stands on the ornament PCB under the display's bottom corners, pegs in the display's bottom holes |
+
+Hardware: 6 x M2 x 6 self-tapping (4 board, 2 display), plus 1 x M2 x 8 flat (countersunk) head
+to fix the sled into the outer.
+
+Assembly:
+
+1. Drop the board straight in, USB-C on the left and the header at the boss end, then
+   screw it down. The bosses stop 0.2 mm past the PCB edge, so the board goes straight in
+   (the tray's bosses overhang the board, so it has to go in at an angle).
+2. Set the bridge on the board, legs either side of the WROOM-1 can and the bar across it.
+3. Plug the display onto J1 so that its bottom holes drop over the bridge pegs.
+4. Put two M2 x 6 screws through the display's top holes into the bosses. Snug them, but
+   don't crank them: the screws pull the display onto the bosses, 0.1 mm below where J1 sets it.
+5. Slide the sled in, antenna end last, until the detents click.
+6. Turn the ornament over and drive the M2 x 8 flat head through the countersunk hole in the
+   back (centred, near the hanging-loop end) into the sled's fixing boss. It pulls the sled's
+   floor against the back of the pocket, so it can't rattle or slide out.
+
+To remove it, take out the back screw and pull on the nail groove across the antenna-end face.
+
+Differences from the tray + bezel:
+
+- **No bezel**, so the outer's front window (glass + 1.2 mm) shows a thin ring of the
+  display PCB around the glass, where the tray + bezel showed the bezel rim. The top
+  screws are behind the outer's front wall, so they don't show.
+- **Open sides above the rails**, so you can plug into the jack and USB-C with the sled out.
+  With it in, the outers' tunnels line up as before.
+- **No snap hooks**, so the sled can be PLA throughout.
+
+Fit checks, all clear: the sled and bridge against the boards (including the screw heads,
+LEDs and WROOM-1 pads); the bridge against the sled; the sled and bridge against the sleeve;
+and the sled pushed 8 mm out, where only the detent bumps overlap. Rebuild with
+`./export_sled.sh`. See [Fixing screw](#fixing-screw) for the checks against every outer. The same unmeasured `disp_gap` caveat below applies, and here it
+sets the boss and bridge heights. If the display sits on J1 at some other height above the
+board, set `disp_gap` to the measured value and re-export.
+
 ## Outer interface
 
 What an outer needs to know, all defined once in the `OUTER INTERFACE` block of the `.scad`:
@@ -77,9 +126,44 @@ What an outer needs to know, all defined once in the `OUTER INTERFACE` block of 
 | Detent notch | in each groove, 0.5 deeper, at y -6.5 .. -2.9 (antenna end) |
 | Front | the bezel window (glass + 0.4) is the only thing that needs to show; the bezel's rim can be covered |
 | Sides | the jack and USB windows above; an outer either exposes them or accepts that the core must come out to plug in |
+| Fixing screw | M2 x 8 flat head up through the back at (`fix_x`, `fix_y`) = (13.75, 43.6), into a boss in the sled. The head seats in a 90 degree countersink with 1.8 mm of outer under it; a thicker back gets a counterbore down to that depth, so one screw length fits every outer |
 
-The `env_*`, `groove_*`, `notch_*`, `usb_win`, `jack_win` and `glass_*` variables give the
+The `env_*`, `groove_*`, `notch_*`, `usb_win`, `jack_win`, `glass_*` and `fix_*` variables give the
 numbers, so an outer written in the same file (or one that `include`s it) never restates them.
+`sleeve_cuts()` cuts the pocket, window, cable tunnels and the fixing-screw hole, and
+`sleeve_rails()` adds the rails, so an outer built from those two gets all of it.
+
+### Fixing screw
+
+How a core is held in an outer: the rails in the side grooves locate it side to side and front
+to back, and the detent bumps hold it at the end of travel. On their own the detents only hold
+by friction, so a knock can slide the core out of the open bottom. The fixing screw makes it
+positive: one M2 x 8 flat head through the outer's back into the sled.
+
+![countersunk fixing hole on the back of the sleeve, below the hanging loop](docs/sleeve_back_screw.png)
+
+The screw is at the header end, as far from the WROOM-1 antenna as the pocket allows, past the
+PCB edge and under the display overhang, where the sled has room for a 9.6 mm deep boss (so
+M2 x 10 also works). The tray + bezel core has no boss; with it, leave the hole empty.
+
+Every outer was checked against the sled with the screw in place, in its own source:
+
+| Outer | Sled + bridge + boards inside | Slide in from fully out | Screw clear of the outer | Back under the head |
+|---|---|---|---|---|
+| default sleeve | empty | detent bumps only | empty | 1.8 mm, flush countersink |
+| v1: cap, spidey_nwh, ironman, widow, spidey_classic | empty | detent bumps only | empty | 1.8 mm, flush countersink |
+| v2: cap, spidey_nwh, ironman, widow, spidey_classic | empty | detent bumps only | empty | 1.8 mm, flush countersink |
+| ironman_v2b, ironman_v2c | empty | detent bumps only | empty | 1.8 mm, flush countersink |
+| trapezoid_armor, reactor_medallion, stark_core | empty | detent bumps only | empty | 1.8 mm, flush countersink |
+
+"Slide" sweeps the assembled sled from 70 mm out to home; the only overlap at any point is the
+0.25 mm detent interference (2.4 mm³ total) that clicks into the notches. All the outers'
+backs are flat at the same depth, so none needed the counterbore.
+
+All body STLs were re-exported with the hole (each loses 11.9 mm³ and stays one watertight solid);
+the colour inlays don't change. `validate_outers_v2.py` and `validate_selected_ironman.py` pass and
+their reports are refreshed. `docs/ironman_v2b_validation.json` and `ironman_v2c_validation.json`
+have no generator script, so the body hashes in them predate the hole.
 
 ## Default outer: sleeve
 

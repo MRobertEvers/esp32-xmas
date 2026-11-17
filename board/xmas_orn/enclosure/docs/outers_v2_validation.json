@@ -5,11 +5,11 @@
     "cap": {
       "parts": {
         "body": {
-          "sha256": "a383665fddd0a1474cefde95271fd6bef96b25ca169f52433f1f9e8e130b567d",
+          "sha256": "983f027bbeaa352bc4eceb4332e3c47a00b4fd2baa0a7533f9d628dc9277daac",
           "watertight": true,
           "winding_consistent": true,
           "components": 1,
-          "volume_mm3": 104448.3008
+          "volume_mm3": 104436.425
         },
         "white": {
           "sha256": "17572f809cd94f49058acb8fa423baf15f72cd59efc979cf0b0bed1b9df439d9",
@@ -47,11 +47,11 @@
     "spidey_nwh": {
       "parts": {
         "body": {
-          "sha256": "fe6550bc40749f8907a93d13b367888d3d01dfbbe335a7384fd125954756a624",
+          "sha256": "65edf8b5264fceb652e2e1bf375dc65e051148a49e806a637f725b54985e962b",
           "watertight": true,
           "winding_consistent": true,
           "components": 1,
-          "volume_mm3": 71301.8472
+          "volume_mm3": 71289.9714
         },
         "black": {
           "sha256": "ad4ed7b62bacbba3ae7aa7d511969f0977bc76590693903239c7d3399930dcd4",
@@ -96,11 +96,11 @@
     "ironman": {
       "parts": {
         "body": {
-          "sha256": "b1185fb146d21008694e8e098baf09e329ae6e9d3f752c119045fdd43251c378",
+          "sha256": "8c5f3ff9132c9179f458f593b87e57331fc5ffdf87f89cc6a3a4830e148e13ec",
           "watertight": true,
           "winding_consistent": true,
           "components": 1,
-          "volume_mm3": 70605.8166
+          "volume_mm3": 70593.9408
         },
         "gold": {
           "sha256": "cf52a8a5675b78710cfbc91a8e8786df0d9cd489eeec6bd2486d19e59e8a3e1c",
@@ -145,11 +145,11 @@
     "widow": {
       "parts": {
         "body": {
-          "sha256": "45e08e686515aa879356b4f16788cf870e24998af62702d163c7fc7965a4bb0a",
+          "sha256": "523132880e15dfd33f4873978fe426301ddd9058ed52fc324e2952bad5bfc594",
           "watertight": true,
           "winding_consistent": true,
           "components": 1,
-          "volume_mm3": 77036.8816
+          "volume_mm3": 77025.0058
         },
         "silver": {
           "sha256": "883f69b3f5e07eaabbcf0b7ca4be1cc6cd83e46d909c460050064f6c22e4fbe7",
@@ -187,11 +187,11 @@
     "spidey_classic": {
       "parts": {
         "body": {
-          "sha256": "de103ee37aa05d3f1f2f67c52fe932e7dd993595635ab2939bb8bdb067b0b07e",
+          "sha256": "0c2e204a98e5f9e56b11890bd510440249ce760b7ca1a75aade7459fdd49bd79",
           "watertight": true,
           "winding_consistent": true,
           "components": 1,
-          "volume_mm3": 78748.7699
+          "volume_mm3": 78736.894
         },
         "blue": {
           "sha256": "bd421e55051264c9e5dd5fa5fb46228e89f53b99dc46d976b140b875202f6477",
@@ -235,7 +235,7 @@
     }
   },
   "source_sha256": {
-    "xmas_orn_case.scad": "353e4d7a6c33eb5a996bc165edbf55d3b42be81c8400d3dd146988db9215f410",
+    "xmas_orn_case.scad": "69853cabab1eb6df21951fdaefe9bc087ad21a4f5f60d6e910572644c6be9977",
     "xmas_orn_outers_v2.scad": "4044287eec9f45cbab8926a80494a1c9e71b84dfead26d4e1c8dae1a96c52bac"
   }
 }
