@@ -48,3 +48,9 @@ fp-info-cache
 
 # KiCad lock files
 *.lck
+
+# Playwright MCP session logs
+.playwright-mcp/
+
+# VS Code Local History extension
+.history/

@@ -8,7 +8,7 @@ for spec in "cap body white blue" "spidey_nwh body black white" "ironman body go
     set -- $spec; theme=$1; shift
     mkdir -p "stl/outers/$theme"
     for c in "$@"; do
-        "$OPENSCAD" -q -D "part=\"${theme}_${c}_print\"" -o "stl/outers/$theme/${theme}_${c}.stl" xmas_orn_outers.scad
+        "$OPENSCAD" -q --export-format binstl -D "part=\"${theme}_${c}_print\"" -o "stl/outers/$theme/${theme}_${c}.stl" xmas_orn_outers.scad
         echo "stl/outers/$theme/${theme}_${c}.stl"
     done
 done
