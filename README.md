@@ -71,11 +71,14 @@ SVG, and 3D renders of both sides
 ([top](board/xmas_orn/docs/xmas_orn_rev2_top.png),
 [bottom](board/xmas_orn/docs/xmas_orn_rev2_bottom.png));
 `board/xmas_orn/production/rev2/` holds the JLCPCB gerber/drill zip, BOM and
-placement file, exported with `kicad-cli` (J2 excluded as DNP). The placement
-rotations are KiCad's raw angles, not the per-package corrections the
-Fabrication Toolkit plugin applies, so check the part orientation in JLCPCB's
-placement preview before confirming. The files directly under `production/` are
-the rev 1 outputs.
+placement file, written by `tools/jlc_export.py xmas_orn` through the
+[Fabrication Toolkit](https://github.com/bennymeg/Fabrication-Toolkit) plugin
+(J2 excluded as DNP). The script puts the plugin's `FT Rotation Offset`,
+`FT Position Offset` and `FT Origin` fields on the footprints from tables of
+values checked on JLCPCB's placement preview, runs the plugin's command line
+with KiCad's Python, and prints every polarised part with what it got,
+UNVERIFIED for any footprint never checked. See the placement gotchas below.
+The files directly under `production/` are the rev 1 outputs.
 
 Firmware for rev 2: `sdkconfig.rev2.defaults` overlays the 16 MB flash size and
 enables the octal PSRAM. The base defaults still build a firmware that runs on
@@ -98,24 +101,44 @@ all AliExpress unless noted):
 
 #### JLCPCB placement gotchas (learned on order W2026090908054344, 2026-09-08)
 
-- **Rotations.** `kicad-cli` writes KiCad's raw footprint angle, but JLCPCB
-  applies that angle to *its own* part model, whose 0° differs per package.
-  On the first rev 2 order the 1×7 socket J1 came out vertical and the
-  WROOM-1 U1 was flipped end-for-end (antenna on the board, shield hanging
-  off the edge). JLCPCB's engineer corrected both before production, and the
-  CPL in `production/rev2/` now carries the JLCPCB-correct angles for those
-  two parts (J1 = 0, U1 = 0). Any new footprint needs the same check.
-- **Always open Order History → DFM Analysis after paying** and tick
-  "Show Components": that view is the engineer-adjusted placement that will
-  actually be built. Verify every polarised part (diodes, LEDs, ICs, the
-  module, connectors) against `docs/xmas_orn_rev2_top.png` before the SMT
-  line starts. "Confirm Parts Placement" at order time makes JLCPCB wait for
-  your sign-off instead.
+- **Rotations and positions are KiCad's plus a per-part offset.** JLCPCB
+  applies the CPL angle to *its own* part model, whose 0° differs per
+  package, and puts *its own* footprint origin at the CPL point. On the first
+  rev 2 order the 1×7 socket J1 came out vertical and the WROOM-1 U1 flipped
+  end-for-end; on the re-order (Y13, 2026-09-10) U1 was 3.62 mm off its pads
+  because JLCPCB's WROOM-1 origin is the pad-area centre and KiCad's is the
+  body centre. JLCPCB's engineer corrected each one, which is luck, not a
+  process. `tools/jlc_export.py` now writes the offsets that were checked on
+  JLCPCB's preview as Fabrication Toolkit fields on the footprints (socket
+  +270 with the pad-centre origin, SOT-23-5 +270, WROOM-1 position `0,-3.62`;
+  hub SOT-23-6 +270, TO-252 +180, terminal blocks +180 with the anchor
+  origin) and prints UNVERIFIED for any polarised footprint it has no entry
+  for. The plugin's own auto-translate table is switched off in both
+  `fabrication-toolkit-options.json`; it is wrong for the SOT-23-6.
+- **Measure the preview, do not look at it.** Before saving to the cart,
+  save the *Part Placement* image from the cart item (or, after paying, from
+  the order line's *Product Details*) and run
+  `tools/jlc_preview_check.py board/<b>/<b>.kicad_pcb <png> top`: it draws
+  KiCad's pads in red (pad 1 cyan) over JLCPCB's rendering and crops each
+  part. Looking at the preview without the overlay passed the 3.6 mm U1
+  error. After paying, *Order History → DFM Analysis* with "Show
+  Components" is the engineer-adjusted placement that will actually be
+  built; check it the same way, and note the page keeps a dialog for every
+  line it ever had, cancelled ones included, so read the order number.
+  "Confirm Parts Placement" at order time makes JLCPCB wait for your
+  sign-off instead.
 - **Through-hole parts must be in the CPL** or JLCPCB skips them: the hub's
   jack, terminal blocks and bulk cap were missing from the SMD-only export.
-  `xmas_hub/production/JLCPCB_xmas_hub_positions.csv` now lists all 60 parts
-  in the five-column form (Designator, Mid X, Mid Y, Rotation, Layer);
-  JLCPCB's parser rejects quoted fields, so keep footprint names out of it.
+  The plugin includes every footprint not marked *exclude from position
+  files*; the hub's file lists all 60 parts in the five-column form
+  (Designator, Mid X, Mid Y, Rotation, Layer). JLCPCB's parser rejects
+  quoted fields, so keep footprint names out of it.
+- **Tick every BOM row.** Rows whose Comment is a value rather than a part
+  number come back from the matcher with the *Select* box unticked, and the
+  "Project has unselected parts" dialog offers *Do not place*. Three of the
+  four boards on the first order went to production without their
+  resistors, LEDs or regulator that way. The saved cart item's *Product
+  Details → Bill of Material* must say "Unselected Parts: No data".
 - **Part numbers.** Give JLCPCB LCSC C-numbers, not manufacturer numbers; its
   matcher fails on hyphenated MPNs. Substitutions made on that order: hub Q1
   AOD417 → AOD4185 (C400894, out of stock); ornament J1 = C22438157,
@@ -184,7 +207,7 @@ cable guidance and the generator scripts are in
 | Board | `kicad-cli` | ships with KiCad | ERC/DRC, netlist, BOM, position file, gerber/drill export, PDF/SVG/PNG renders in `docs/` |
 | Board | KiCad's bundled Python (`pcbnew`) | inside the KiCad app bundle | `board/xmas_hub/scripts/gen_sch.py` / `gen_pcb.py` generate that board programmatically |
 | Board | [Freerouting](https://github.com/freerouting/freerouting) | | Autorouting; both boards are fresh autoroutes that pass the project DRC |
-| Board | [Fabrication Toolkit](https://github.com/bennymeg/Fabrication-Toolkit) | KiCad plugin, `fabrication-toolkit-options.json` | Rev 1 JLCPCB outputs under `production/`; rev 2 used `kicad-cli` directly |
+| Board | [Fabrication Toolkit](https://github.com/bennymeg/Fabrication-Toolkit) | KiCad plugin, installed under `~/Documents/KiCad/10.0/3rdparty/plugins/`; `fabrication-toolkit-options.json` | All JLCPCB outputs: `tools/jlc_export.py` drives its command line with KiCad's Python (rev 1 used the GUI, the first rev 2 order used `kicad-cli`) |
 | Enclosure | [OpenSCAD](https://openscad.org/) | 2026.09 snapshot, `brew install --cask openscad@snapshot` | `board/xmas_orn/enclosure/xmas_orn_case.scad`; `export.sh` renders the STLs and the `check_*` parts prove the fit |
 | Enclosure | [trimesh](https://trimesh.org/) (optional) | `pip install trimesh numpy networkx` | Watertightness and overlap-volume checks on the exported meshes |
 | Enclosure | [Bambu Studio](https://bambulab.com/en/download/studio) | | Slicing for the Bambu Lab A1 mini; the STLs are already print-oriented |

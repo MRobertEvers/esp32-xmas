@@ -167,6 +167,18 @@
 				)
 			)
 		)
+		(property "LCSC Part #" "CL10A105KA8NNNC"
+			(at 0 0 0)
+			(layer "F.SilkS")
+			(hide yes)
+			(uuid "50072c7c-7f9b-41f8-a40e-6a91d0a6ccfb")
+			(effects
+				(font
+					(size 1.27 1.27)
+					(thickness 0.15)
+				)
+			)
+		)
 		(property ki_fp_filters "C_*")
 		(path "/00fc402f-0576-4288-b8a1-068ea88e527a")
 		(sheetname "/")
@@ -335,6 +347,30 @@
 			(effects
 				(font
 					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "LCSC Part #" "TLV75733PDBVR-MS"
+			(at 0 0 0)
+			(layer "F.SilkS")
+			(hide yes)
+			(uuid "af0c0dc5-6097-4f96-a380-f947422cbfed")
+			(effects
+				(font
+					(size 1.27 1.27)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "FT Rotation Offset" "270"
+			(at 0 0 0)
+			(layer "F.SilkS")
+			(hide yes)
+			(uuid "20722561-fe68-453e-a70a-7f5b3d799713")
+			(effects
+				(font
+					(size 1.27 1.27)
 					(thickness 0.15)
 				)
 			)
@@ -755,6 +791,18 @@
 				)
 			)
 		)
+		(property "LCSC Part #" "CL21A106KOQNNNE"
+			(at 0 0 0)
+			(layer "F.SilkS")
+			(hide yes)
+			(uuid "99bb31ba-5060-4583-ae0e-67efaa5c3f9b")
+			(effects
+				(font
+					(size 1.27 1.27)
+					(thickness 0.15)
+				)
+			)
+		)
 		(property ki_fp_filters "C_*")
 		(path "/e288c1e3-0837-435d-8a12-b5831dd9ebbc")
 		(sheetname "/")
@@ -936,6 +984,18 @@
 			(effects
 				(font
 					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "LCSC Part #" "C2286"
+			(at 0 0 0)
+			(layer "F.SilkS")
+			(hide yes)
+			(uuid "6e9c0c12-0895-4ae2-b477-2408f885b7d8")
+			(effects
+				(font
+					(size 1.27 1.27)
 					(thickness 0.15)
 				)
 			)
@@ -1163,6 +1223,18 @@
 				)
 			)
 		)
+		(property "LCSC Part #" "AC0603JR-0710KL"
+			(at 0 0 0)
+			(layer "F.SilkS")
+			(hide yes)
+			(uuid "d64bb660-87ce-4a8c-91df-8dbe87001bc1")
+			(effects
+				(font
+					(size 1.27 1.27)
+					(thickness 0.15)
+				)
+			)
+		)
 		(property ki_fp_filters "R_*")
 		(path "/871c09ef-0e68-49de-8720-bf5ea36f2615")
 		(sheetname "/")
@@ -1331,6 +1403,18 @@
 			(effects
 				(font
 					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "LCSC Part #" "AC0603JR-0710KL"
+			(at 0 0 0)
+			(layer "F.SilkS")
+			(hide yes)
+			(uuid "7fc048f6-d9dc-4ce1-ad6d-95a270710bd2")
+			(effects
+				(font
+					(size 1.27 1.27)
 					(thickness 0.15)
 				)
 			)
@@ -1516,6 +1600,18 @@
 			(effects
 				(font
 					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "LCSC Part #" "C2286"
+			(at 0 0 0)
+			(layer "F.SilkS")
+			(hide yes)
+			(uuid "21cc6f98-f101-414e-83f2-929285d24d31")
+			(effects
+				(font
+					(size 1.27 1.27)
 					(thickness 0.15)
 				)
 			)
@@ -1741,6 +1837,7 @@
 			(effects
 				(font
 					(size 1.27 1.27)
+					(thickness 0.15)
 				)
 			)
 		)
@@ -2043,6 +2140,18 @@
 				)
 			)
 		)
+		(property "LCSC Part #" "RC0603JR-072KL"
+			(at 0 0 0)
+			(layer "F.SilkS")
+			(hide yes)
+			(uuid "05ab1d15-c638-4dfd-830a-1b573eb145d6")
+			(effects
+				(font
+					(size 1.27 1.27)
+					(thickness 0.15)
+				)
+			)
+		)
 		(property ki_fp_filters "R_*")
 		(path "/c44e6ffb-d599-490a-b615-4f1c21e90141")
 		(sheetname "/")
@@ -2215,6 +2324,18 @@
 				)
 			)
 		)
+		(property "LCSC Part #" "RC0603FR-075K1L"
+			(at 0 0 0)
+			(layer "F.SilkS")
+			(hide yes)
+			(uuid "2b4bb9ed-7618-4c4f-ba4f-5e48183b9226")
+			(effects
+				(font
+					(size 1.27 1.27)
+					(thickness 0.15)
+				)
+			)
+		)
 		(property ki_fp_filters "R_*")
 		(path "/86331922-66d6-4134-aa52-458c1256d139")
 		(sheetname "/")
@@ -2375,6 +2496,18 @@
 			(effects
 				(font
 					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "LCSC Part #" "C165948"
+			(at 0 0 0)
+			(layer "F.SilkS")
+			(hide yes)
+			(uuid "f95a2ba9-075e-4f4b-9ef2-fff31ad1ab87")
+			(effects
+				(font
+					(size 1.27 1.27)
 					(thickness 0.15)
 				)
 			)
@@ -2853,6 +2986,19 @@
 			(effects
 				(font
 					(size 1.27 1.27)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "FT Position Offset" "0,-3.62"
+			(at 0 0 0)
+			(layer "F.SilkS")
+			(hide yes)
+			(uuid "d5f93c6a-9b61-4628-b3c9-38cd0fd0a318")
+			(effects
+				(font
+					(size 1.27 1.27)
+					(thickness 0.15)
 				)
 			)
 		)
@@ -3669,6 +3815,18 @@
 				)
 			)
 		)
+		(property "LCSC Part #" "RC0603FR-07470RL"
+			(at 0 0 0)
+			(layer "F.SilkS")
+			(hide yes)
+			(uuid "2d88d401-bff2-4b79-aff9-9f1e0e9d1605")
+			(effects
+				(font
+					(size 1.27 1.27)
+					(thickness 0.15)
+				)
+			)
+		)
 		(property ki_fp_filters "R_*")
 		(path "/37c1d0fe-6218-4e22-b319-256d4e0c1923")
 		(sheetname "/")
@@ -3829,6 +3987,18 @@
 			(effects
 				(font
 					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "LCSC Part #" "C231329"
+			(at 0 0 0)
+			(layer "F.SilkS")
+			(hide yes)
+			(uuid "27c80133-5ccd-49c0-88d8-0c31b354bb2d")
+			(effects
+				(font
+					(size 1.27 1.27)
 					(thickness 0.15)
 				)
 			)
@@ -4102,6 +4272,18 @@
 			(effects
 				(font
 					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "LCSC Part #" "C231329"
+			(at 0 0 0)
+			(layer "F.SilkS")
+			(hide yes)
+			(uuid "a87ea0e2-7ef9-4da9-b8f8-bda5d9b659c7")
+			(effects
+				(font
+					(size 1.27 1.27)
 					(thickness 0.15)
 				)
 			)
@@ -4381,6 +4563,7 @@
 			(effects
 				(font
 					(size 1.27 1.27)
+					(thickness 0.15)
 				)
 			)
 		)
@@ -4704,6 +4887,7 @@
 			(effects
 				(font
 					(size 1.27 1.27)
+					(thickness 0.15)
 				)
 			)
 		)
@@ -5006,6 +5190,18 @@
 				)
 			)
 		)
+		(property "LCSC Part #" "CL21A106KOQNNNE"
+			(at 0 0 0)
+			(layer "F.SilkS")
+			(hide yes)
+			(uuid "3b1e757d-d5ec-43fc-975b-d2ed528922c9")
+			(effects
+				(font
+					(size 1.27 1.27)
+					(thickness 0.15)
+				)
+			)
+		)
 		(property ki_fp_filters "C_*")
 		(path "/2a97629d-a038-42b8-8f61-09134b948ed1")
 		(sheetname "/")
@@ -5179,6 +5375,18 @@
 				)
 			)
 		)
+		(property "LCSC Part #" "RC0603FR-075K1L"
+			(at 0 0 0)
+			(layer "F.SilkS")
+			(hide yes)
+			(uuid "d6d08579-4189-4b32-812e-25d76e48bcdd")
+			(effects
+				(font
+					(size 1.27 1.27)
+					(thickness 0.15)
+				)
+			)
+		)
 		(property ki_fp_filters "R_*")
 		(path "/dd1cfc1e-d5ac-4dae-963a-8d1caf168555")
 		(sheetname "/")
@@ -5347,6 +5555,30 @@
 			(effects
 				(font
 					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "LCSC Part #" "C22438157"
+			(at 0 0 0)
+			(layer "F.SilkS")
+			(hide yes)
+			(uuid "78b38bbe-08dd-44c9-a240-15761732cef0")
+			(effects
+				(font
+					(size 1.27 1.27)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "FT Rotation Offset" "270"
+			(at 0 0 0)
+			(layer "F.SilkS")
+			(hide yes)
+			(uuid "abb2fd25-0b6c-401d-b790-6229df6a31c6")
+			(effects
+				(font
+					(size 1.27 1.27)
 					(thickness 0.15)
 				)
 			)

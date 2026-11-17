@@ -90,8 +90,14 @@ terminal, the electrolytic and the Sunlord MWSA inductor series.
 ## Ordering (JLCPCB)
 
 `production/` holds gerbers + drills (`JLCPCB_xmas_hub.zip`), a position file
-and a BOM. Every line is sourced on LCSC; the `LCSC Part #` field is on each
-symbol and footprint, so the Fabrication Toolkit picks it up too.
+and a BOM, all written by `tools/jlc_export.py xmas_hub` (repo root) through
+the Fabrication Toolkit plugin's command line. Every line is sourced on LCSC;
+the `LCSC Part #` field is on each symbol and footprint, so the plugin picks
+it up. The script also puts the placement offsets JLCPCB's part library needs
+on the footprints (U1–U4 SOT-23-6 +270°, Q1 TO-252 +180°, J2–J5 terminal
+blocks +180° placed at the KiCad anchor), all checked on JLCPCB's preview for
+order Y14; see the placement gotchas in the top-level README. Order Y14 was
+built with Q1 = AOD4185 (C400894) because AOD417 was out of stock.
 
 | Part | Value | MPN | LCSC |
 |---|---|---|---|
