@@ -5,9 +5,9 @@
 # config codec. This client decodes one model blob out of a flash partition
 # and has no filesystem to open a cache from.
 #
-# The set is the codecs this client decodes and the byte reader they share:
-# a model, a framemap (the animation rig) and a frame. Everything else these
-# files need is libc. If a future need pulls in another codec, add the file it
+# The set is the codecs this client decodes, the byte reader they share and
+# the allocator hook they all allocate through: a model, a framemap (the
+# animation rig) and a frame. Everything else these files need is libc. If a future need pulls in another codec, add the file it
 # needs; do not reach for the unity build, which would put a vorbis decoder and
 # a CS2 compiler in a Christmas ornament.
 
@@ -31,6 +31,10 @@ idf_component_register(
         "${RSCACHE_DIR}/src/datatypes/dat2_framemap.c"
         "${RSCACHE_DIR}/src/datatypes/dat2_frame.c"
         "${RSCACHE_DIR}/src/rsbuffer.c"
+        # Every allocation the files above make goes through
+        # g_rscache_allocator, which lives here. Without it the image fails to
+        # link. It defaults to libc, which is what this client wants.
+        "${RSCACHE_DIR}/src/rscache_alloc.c"
     INCLUDE_DIRS
         "${RSCACHE_DIR}/include"
         # rscache.h includes its own headers by bare name. That is RSCache's

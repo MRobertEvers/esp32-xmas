@@ -64,7 +64,11 @@ if (-not $CcPath) {
 $frames = New-Object System.Collections.ArrayList
 $delays = New-Object System.Collections.ArrayList
 if ($AnimSeq) {
-    $seqFile = Join-Path $ClientcDir "OSRS-Content\osrs239-content\configs\all.seq"
+    # OSRS-Content keeps ONE content tree, osrs-content/, at its newest cache
+    # revision -- it was osrs239-content/ until it moved to 242. A sequence's
+    # frame ids only mean something against the cache they came from, so check
+    # [$AnimSeq] still matches ANIM_CACHE_DIR when the submodule is bumped.
+    $seqFile = Join-Path $ClientcDir "OSRS-Content\osrs-content\configs\all.seq"
     if (-not (Test-Path $seqFile)) { throw "all.seq not found at $seqFile" }
     $inRecord = $false
     foreach ($line in [System.IO.File]::ReadLines($seqFile)) {
